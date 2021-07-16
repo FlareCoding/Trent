@@ -740,9 +740,12 @@ namespace trent::parser
 		auto body_node = ParseStatement();
 		loop_node->d_body.push_back(body_node);
 
-		while (IsSymbol(d_current_token, Symbol::Semicolon))
+		while (IsSymbol(d_current_token, Symbol::Semicolon) || IsSymbol(d_current_token, Symbol::BraceClose))
 		{
-			Expect(Symbol::Semicolon);
+			if (CurrentToken<SymbolToken>()->d_symbol == Symbol::Semicolon)
+				Expect(Symbol::Semicolon);
+			else
+				Expect(Symbol::BraceClose);
 
 			// EOF or end of function body reached.
 			if (d_current_token == nullptr || IsSymbol(d_current_token, Symbol::BraceClose))
