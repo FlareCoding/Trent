@@ -1,0 +1,14 @@
+
+func add(x, y) {
+	var result = x + y;
+	return result;
+}
+
+func mul(x, y) {
+	return x * y;
+}
+
+var num = 2;
+var result = mul(num, 5);
+
+println(result);
