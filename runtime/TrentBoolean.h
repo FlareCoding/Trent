@@ -3,17 +3,14 @@
 
 namespace trent
 {
-	class TrentString : public TrentObject
+	class TrentBoolean : public TrentObject
 	{
 	public:
-		TRAPI TrentString(const char* value = "");
+		TRAPI TrentBoolean(bool value = false);
 		TRAPI const char* ToString() override;
 		TRAPI const char* GetRuntimeName() override;
 
-		TRAPI inline std::string& GetBuffer() { return d_buffer; }
-
-		// Addition binary operator
-		TRAPI virtual TrentObject* __operator_add(TrentObject* obj) override;
+		TRAPI inline bool GetValue() const { return d_value; }
 
 		// Equal to boolean operator
 		TRAPI virtual TrentObject* __operator_equequ(TrentObject* obj) override;
@@ -22,12 +19,7 @@ namespace trent
 		TRAPI virtual TrentObject* __operator_notequ(TrentObject* obj) override;
 
 	private:
-		std::string d_buffer;
+		bool d_value;
 		std::string d_string_repr;
-
-	private:
-		TrentObject* __Length(TrentObject* args);
-		TrentObject* __Reverse(TrentObject* args);
-		TrentObject* __Append(TrentObject* args);
 	};
 }

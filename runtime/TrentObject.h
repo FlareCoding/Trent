@@ -30,10 +30,36 @@ namespace trent
 		TRAPI virtual const char* ToString();
 		TRAPI const char* GetInstanceDescription();
 
+		/*
+		*	Binary Operators
+		*/
+
 		TRAPI virtual TrentObject* __operator_add(TrentObject* obj);
 		TRAPI virtual TrentObject* __operator_sub(TrentObject* obj);
 		TRAPI virtual TrentObject* __operator_mul(TrentObject* obj);
 		TRAPI virtual TrentObject* __operator_div(TrentObject* obj);
+
+		/*
+		*	Boolean Operators
+		*/
+
+		// Less than boolean operator
+		TRAPI virtual TrentObject* __operator_lt(TrentObject* obj);
+
+		// Less than or equal to boolean operator
+		TRAPI virtual TrentObject* __operator_gt(TrentObject* obj);
+		
+		// Greater than boolean operator
+		TRAPI virtual TrentObject* __operator_ltoe(TrentObject* obj);
+
+		// Greater than or equal to boolean operator
+		TRAPI virtual TrentObject* __operator_gtoe(TrentObject* obj);
+
+		// Equal to boolean operator
+		TRAPI virtual TrentObject* __operator_equequ(TrentObject* obj);
+
+		// Not equal to boolean operator
+		TRAPI virtual TrentObject* __operator_notequ(TrentObject* obj);
 
 		ObjectType d_type;
 
@@ -66,6 +92,7 @@ namespace trent
 
 #define MAKE_TRENT_INT(val)			TrentRuntime::AllocateObject<TrentInteger>(val)
 #define MAKE_TRENT_STRING(val)		TrentRuntime::AllocateObject<TrentString>(val)
+#define MAKE_TRENT_BOOLEAN(val)		TrentRuntime::AllocateObject<TrentBoolean>(val)
 #define MAKE_TRENT_TUPLE_IL(...)	TrentRuntime::AllocateObject<TrentTuple>(PARAM_LIST_IL(__VA_ARGS__))
 #define MAKE_TRENT_TUPLE_VEC(...)	TrentRuntime::AllocateObject<TrentTuple>(PARAM_LIST_VEC(__VA_ARGS__))
 #define MAKE_TRENT_TUPLE(val)		TrentRuntime::AllocateObject<TrentTuple>(val)

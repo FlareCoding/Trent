@@ -54,15 +54,26 @@ namespace trent::parser
 
 		NodeRef<ASTNode>			ParseStatement();
 		NodeRef<ASTExpressionNode>	ParseExpression();
-		NodeRef<ASTNode>			ParseFunctionDeclaration();
 		NodeRef<ASTExpressionNode>	ParseReturnStatement();
+
+		NodeRef<ASTNode>			ParseFunctionDeclaration();
 		NodeRef<ASTNode>			ParseFunctionCall();
+
 		NodeRef<ASTNode>			ParseVariableDeclaration();
 		NodeRef<ASTNode>			ParseVariableAssignment();
+		NodeRef<ASTNode>			ParseVariableIncrement();
+		NodeRef<ASTNode>			ParseVariableDecrement();
+		NodeRef<ASTNode>			ParseVariableAdditionAssignment();
+		NodeRef<ASTNode>			ParseVariableSubtractionAssignment();
+		NodeRef<ASTNode>			ParseVariableMultiplicationAssignment();
+		NodeRef<ASTNode>			ParseVariableDivisionAssignment();
+
 		NodeRef<ASTNode>			ParseLiteralValue();
 		NodeRef<ASTNode>			ParseIdentifier();
 		NodeRef<ASTNode>			ParseKeyword();
 		NodeRef<ASTNode>			ParseOperator(TokenRef<ASTExpressionNode> lhs);
+
+		NodeRef<ASTNode>			ParseWhileLoop();
 
 	private:
 		// Contains all the tokens

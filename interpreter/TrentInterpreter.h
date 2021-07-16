@@ -34,11 +34,15 @@ namespace trent
 
 		void RegisterVariable(const std::string& name, TrentObject* obj);
 		TrentObject* GetRegisteredVariable(const std::string& name);
+		void UpdateRegisteredVariable(const std::string& name, TrentObject* obj);
 
 	private:
 		TrentObject* EvaluateLiteralValueNode(NodeRef<ASTLiteralValueNode> node);
 		TrentObject* EvaluateExpressionNode(NodeRef<ASTExpressionNode> node);
 		TrentObject* EvaluateBinaryOperatorNode(NodeRef<ASTBinaryOperatorNode> node);
+		TrentObject* EvaluateBooleanOperatorNode(NodeRef<ASTBooleanOperatorNode> node);
+
+		TrentObject* EvaluateWhileLoopNode(NodeRef<ASTWhileLoopNode> node);
 
 		TrentObject* EvaluateVariableDeclarationNode(NodeRef<ASTVariableDeclarationNode> node);
 		TrentObject* EvaluateVariableNode(NodeRef<ASTVariableNode> node);

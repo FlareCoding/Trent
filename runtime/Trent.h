@@ -4,3 +4,4 @@
 #include "TrentString.h"
 #include "TrentInteger.h"
 #include "TrentTuple.h"
+#include "TrentBoolean.h"

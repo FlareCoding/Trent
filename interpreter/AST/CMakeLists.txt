@@ -9,6 +9,7 @@ set(
     interpreter/AST/ASTNode.h
     interpreter/AST/ASTAssignmentNode.h
     interpreter/AST/ASTBinaryOperatorNode.h
+    interpreter/AST/ASTBooleanOperatorNode.h
     interpreter/AST/ASTExpressionNode.h
     interpreter/AST/ASTFunctionCallNode.h
     interpreter/AST/ASTFunctionDeclarationNode.h
@@ -16,6 +17,7 @@ set(
     interpreter/AST/ASTProgramNode.h
     interpreter/AST/ASTVariableDeclarationNode.h
     interpreter/AST/ASTVariableNode.h
+    interpreter/AST/ASTWhileLoopNode.h
 
     PARENT_SCOPE
 )
@@ -26,6 +28,7 @@ set(
     interpreter/AST/ASTNode.cpp
     interpreter/AST/ASTAssignmentNode.cpp
     interpreter/AST/ASTBinaryOperatorNode.cpp
+    interpreter/AST/ASTBooleanOperatorNode.cpp
     interpreter/AST/ASTExpressionNode.cpp
     interpreter/AST/ASTFunctionCallNode.cpp
     interpreter/AST/ASTFunctionDeclarationNode.cpp
@@ -33,6 +36,7 @@ set(
     interpreter/AST/ASTProgramNode.cpp
     interpreter/AST/ASTVariableDeclarationNode.cpp
     interpreter/AST/ASTVariableNode.cpp
+    interpreter/AST/ASTWhileLoopNode.cpp
 
     PARENT_SCOPE
 )

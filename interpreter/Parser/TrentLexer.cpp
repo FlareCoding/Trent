@@ -41,6 +41,11 @@ namespace trent::parser::lexer
 		return std::all_of(str.begin(), str.end(), ::isdigit);
 	}
 
+	bool IsBoolean(const std::string& str)
+	{
+		return (str == "true") || (str == "false");
+	}
+
 	template <typename T>
 	bool IsInMap(const std::string& str, std::unordered_map<std::string, T>& container)
 	{
@@ -100,7 +105,7 @@ namespace trent::parser::lexer
 
 	void TrentLexer::ParseWord(const std::string& line, size_t lineno)
 	{
-		std::regex rx(R"(==|&&|\|\||[!();:=.,{}\[\]+*/\-])");
+		std::regex rx(R"(/=|\*=|\-=|\-\-|\+=|\+\+|!=|==|&&|\|\||[!();:=.,{}\[\]+*/\-])");
 		std::sregex_token_iterator srti(line.begin(), line.end(), rx, { -1, 0 });
 		std::vector<std::string> tokens;
 		std::remove_copy_if(srti, std::sregex_token_iterator(),
@@ -113,6 +118,15 @@ namespace trent::parser::lexer
 			if (IsInteger(token_str))
 			{
 				auto token = MakeToken<LiteralValueToken>(LiteralType::Integer, token_str);
+				token->d_lineno = lineno;
+				d_token_pool->Add(token);
+				continue;
+			}
+
+			// Checking if token is a boolean
+			if (IsBoolean(token_str))
+			{
+				auto token = MakeToken<LiteralValueToken>(LiteralType::Boolean, token_str);
 				token->d_lineno = lineno;
 				d_token_pool->Add(token);
 				continue;

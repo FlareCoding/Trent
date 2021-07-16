@@ -2,6 +2,7 @@
 #include "TrentTuple.h"
 #include "TrentInteger.h"
 #include "TrentString.h"
+#include "TrentBoolean.h"
 #include <sstream> 
 #include <string>
 
@@ -107,6 +108,66 @@ namespace trent
 		return TrentObject_Null;
 	}
 
+	TrentObject* TrentObject::__operator_lt(TrentObject* obj)
+	{
+		std::string ex_message = std::string("Cannot use < operator on types ") + GetRuntimeName() + std::string(" and ") + obj->GetRuntimeName();
+
+		auto exception = TrentException("TrentObject", ex_message, "__operator_lt::Error");
+		exception.Raise();
+
+		return TrentObject_Null;
+	}
+
+	TrentObject* TrentObject::__operator_gt(TrentObject* obj)
+	{
+		std::string ex_message = std::string("Cannot use > operator on types ") + GetRuntimeName() + std::string(" and ") + obj->GetRuntimeName();
+
+		auto exception = TrentException("TrentObject", ex_message, "__operator_gt::Error");
+		exception.Raise();
+
+		return TrentObject_Null;
+	}
+
+	TrentObject* TrentObject::__operator_ltoe(TrentObject* obj)
+	{
+		std::string ex_message = std::string("Cannot use <= operator on types ") + GetRuntimeName() + std::string(" and ") + obj->GetRuntimeName();
+
+		auto exception = TrentException("TrentObject", ex_message, "__operator_ltoe::Error");
+		exception.Raise();
+
+		return TrentObject_Null;
+	}
+
+	TrentObject* TrentObject::__operator_gtoe(TrentObject* obj)
+	{
+		std::string ex_message = std::string("Cannot use >= operator on types ") + GetRuntimeName() + std::string(" and ") + obj->GetRuntimeName();
+
+		auto exception = TrentException("TrentObject", ex_message, "__operator_gtoe::Error");
+		exception.Raise();
+
+		return TrentObject_Null;
+	}
+
+	TrentObject* TrentObject::__operator_equequ(TrentObject* obj)
+	{
+		std::string ex_message = std::string("Cannot use == operator on types ") + GetRuntimeName() + std::string(" and ") + obj->GetRuntimeName();
+
+		auto exception = TrentException("TrentObject", ex_message, "__operator_equequ::Error");
+		exception.Raise();
+
+		return TrentObject_Null;
+	}
+
+	TrentObject* TrentObject::__operator_notequ(TrentObject* obj)
+	{
+		std::string ex_message = std::string("Cannot use != operator on types ") + GetRuntimeName() + std::string(" and ") + obj->GetRuntimeName();
+
+		auto exception = TrentException("TrentObject", ex_message, "__operator_notequ::Error");
+		exception.Raise();
+
+		return TrentObject_Null;
+	}
+
 	std::ostream& operator<<(std::ostream& os, TrentObject& obj)
 	{
 		os << obj.ToString();
@@ -166,6 +227,20 @@ namespace trent
 				TrentObject** p_arg = va_arg(args, TrentObject**);
 				TrentObject* t_arg = args_tuple->__NativeGetItem(i);
 				*p_arg = t_arg;
+				break;
+			}
+			case 'b': {
+				bool* p_arg = va_arg(args, bool*);
+				TrentBoolean* t_arg = reinterpret_cast<TrentBoolean*>(args_tuple->__NativeGetItem(i));
+				if (strcmp(t_arg->GetRuntimeName(), "Boolean") != 0)
+				{
+					std::string ex_message = std::string("Argument ") + std::to_string(i + 1) + " is not a TrentBoolean";
+					auto exception = TrentException("TrentArg_Parse", ex_message, "ArgumentTypeError");
+					exception.Raise();
+					return false;
+				}
+
+				*p_arg = t_arg->GetValue();
 				break;
 			}
 			default: {

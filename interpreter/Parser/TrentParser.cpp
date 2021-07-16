@@ -3,17 +3,36 @@
 
 namespace trent::parser
 {
-	static BinaryOperationType TokenOperatorToASTOperator(Operator op)
+	static bool IsBinaryOperator(Operator op)
 	{
 		switch (op)
 		{
-		case Operator::Add: return BinaryOperationType::ADD;
-		case Operator::Sub: return BinaryOperationType::SUB;
-		case Operator::Mul: return BinaryOperationType::MUL;
-		case Operator::Div: return BinaryOperationType::DIV;
-		default: {
-			return BinaryOperationType::ADD;
+		case Operator::Add:
+		case Operator::Sub:
+		case Operator::Mul:
+		case Operator::Div:
+			return true;
+		default:
+			return false;
 		}
+	}
+
+	static bool IsBooleanOperator(Operator op)
+	{
+		switch (op)
+		{
+		case Operator::LessThan:
+		case Operator::LessThanOrEqual:
+		case Operator::GreaterThan:
+		case Operator::GreaterThanOrEqual:
+		case Operator::Equequ:
+		case Operator::Notequ:
+		case Operator::Not:
+		case Operator::And:
+		case Operator::Or:
+			return true;
+		default:
+			return false;
 		}
 	}
 
@@ -313,6 +332,8 @@ namespace trent::parser
 			function_declaration_node->d_body.push_back(body_node);
 		}
 
+		Expect(Symbol::BraceClose);
+
 		return function_declaration_node;
 	}
 
@@ -391,6 +412,196 @@ namespace trent::parser
 		return assignment_node;
 	}
 
+	NodeRef<ASTNode> TrentParser::ParseVariableIncrement()
+	{
+		auto variable_node = MakeNode<ASTVariableNode>(PreviousToken<IdentifierToken>()->d_value);
+		variable_node->d_lineno = d_current_token->d_lineno;
+
+		Expect(Operator::Increment);
+
+		auto addition_lhs_expression = MakeNode<ASTExpressionNode>();
+		addition_lhs_expression->d_lineno = d_current_token->d_lineno;
+		addition_lhs_expression->d_value = variable_node;
+
+		auto addition_rhs_expression = MakeNode<ASTExpressionNode>();
+		addition_rhs_expression->d_lineno = d_current_token->d_lineno;
+		addition_rhs_expression->d_value = MakeNode<ASTLiteralValueNode>(LiteralType::Integer, "1");
+
+		auto addition_node = MakeNode<ASTBinaryOperatorNode>();
+		addition_node->d_lineno = d_current_token->d_lineno;
+		addition_node->d_op_type = Operator::Add;
+		addition_node->d_left = addition_lhs_expression;
+		addition_node->d_right = addition_rhs_expression;
+
+		auto variable_value = MakeNode<ASTExpressionNode>();
+		variable_value->d_lineno = d_current_token->d_lineno;
+		variable_value->d_value = addition_node;
+
+		auto assignment_node = MakeNode<ASTAssignmentNode>();
+		assignment_node->d_lineno = d_current_token->d_lineno;
+		assignment_node->d_left = variable_node;
+		assignment_node->d_right = variable_value;
+
+		return assignment_node;
+	}
+
+	NodeRef<ASTNode> TrentParser::ParseVariableDecrement()
+	{
+		auto variable_node = MakeNode<ASTVariableNode>(PreviousToken<IdentifierToken>()->d_value);
+		variable_node->d_lineno = d_current_token->d_lineno;
+
+		Expect(Operator::Decrement);
+
+		auto subtraction_lhs_expression = MakeNode<ASTExpressionNode>();
+		subtraction_lhs_expression->d_lineno = d_current_token->d_lineno;
+		subtraction_lhs_expression->d_value = variable_node;
+
+		auto subtraction_rhs_expression = MakeNode<ASTExpressionNode>();
+		subtraction_rhs_expression->d_lineno = d_current_token->d_lineno;
+		subtraction_rhs_expression->d_value = MakeNode<ASTLiteralValueNode>(LiteralType::Integer, "1");
+
+		auto subtraction_node = MakeNode<ASTBinaryOperatorNode>();
+		subtraction_node->d_lineno = d_current_token->d_lineno;
+		subtraction_node->d_op_type = Operator::Sub;
+		subtraction_node->d_left = subtraction_lhs_expression;
+		subtraction_node->d_right = subtraction_rhs_expression;
+
+		auto variable_value = MakeNode<ASTExpressionNode>();
+		variable_value->d_lineno = d_current_token->d_lineno;
+		variable_value->d_value = subtraction_node;
+
+		auto assignment_node = MakeNode<ASTAssignmentNode>();
+		assignment_node->d_lineno = d_current_token->d_lineno;
+		assignment_node->d_left = variable_node;
+		assignment_node->d_right = variable_value;
+
+		return assignment_node;
+	}
+
+	NodeRef<ASTNode> TrentParser::ParseVariableAdditionAssignment()
+	{
+		auto variable_node = MakeNode<ASTVariableNode>(PreviousToken<IdentifierToken>()->d_value);
+		variable_node->d_lineno = d_current_token->d_lineno;
+
+		Expect(Operator::AdditionAssignment);
+
+		auto binary_op_lhs = MakeNode<ASTExpressionNode>();
+		binary_op_lhs->d_lineno = d_current_token->d_lineno;
+		binary_op_lhs->d_value = variable_node;
+
+		auto binary_op_rhs = ParseExpression();
+
+		auto binary_op_node = MakeNode<ASTBinaryOperatorNode>();
+		binary_op_node->d_lineno = d_current_token->d_lineno;
+		binary_op_node->d_op_type = Operator::Add;
+		binary_op_node->d_left = binary_op_lhs;
+		binary_op_node->d_right = binary_op_rhs;
+
+		auto variable_value = MakeNode<ASTExpressionNode>();
+		variable_value->d_lineno = d_current_token->d_lineno;
+		variable_value->d_value = binary_op_node;
+
+		auto assignment_node = MakeNode<ASTAssignmentNode>();
+		assignment_node->d_lineno = d_current_token->d_lineno;
+		assignment_node->d_left = variable_node;
+		assignment_node->d_right = variable_value;
+
+		return assignment_node;
+	}
+
+	NodeRef<ASTNode> TrentParser::ParseVariableSubtractionAssignment()
+	{
+		auto variable_node = MakeNode<ASTVariableNode>(PreviousToken<IdentifierToken>()->d_value);
+		variable_node->d_lineno = d_current_token->d_lineno;
+
+		Expect(Operator::SubtractionAssignment);
+
+		auto binary_op_lhs = MakeNode<ASTExpressionNode>();
+		binary_op_lhs->d_lineno = d_current_token->d_lineno;
+		binary_op_lhs->d_value = variable_node;
+
+		auto binary_op_rhs = ParseExpression();
+
+		auto binary_op_node = MakeNode<ASTBinaryOperatorNode>();
+		binary_op_node->d_lineno = d_current_token->d_lineno;
+		binary_op_node->d_op_type = Operator::Sub;
+		binary_op_node->d_left = binary_op_lhs;
+		binary_op_node->d_right = binary_op_rhs;
+
+		auto variable_value = MakeNode<ASTExpressionNode>();
+		variable_value->d_lineno = d_current_token->d_lineno;
+		variable_value->d_value = binary_op_node;
+
+		auto assignment_node = MakeNode<ASTAssignmentNode>();
+		assignment_node->d_lineno = d_current_token->d_lineno;
+		assignment_node->d_left = variable_node;
+		assignment_node->d_right = variable_value;
+
+		return assignment_node;
+	}
+
+	NodeRef<ASTNode> TrentParser::ParseVariableMultiplicationAssignment()
+	{
+		auto variable_node = MakeNode<ASTVariableNode>(PreviousToken<IdentifierToken>()->d_value);
+		variable_node->d_lineno = d_current_token->d_lineno;
+
+		Expect(Operator::MultiplicationAssignment);
+
+		auto binary_op_lhs = MakeNode<ASTExpressionNode>();
+		binary_op_lhs->d_lineno = d_current_token->d_lineno;
+		binary_op_lhs->d_value = variable_node;
+
+		auto binary_op_rhs = ParseExpression();
+
+		auto binary_op_node = MakeNode<ASTBinaryOperatorNode>();
+		binary_op_node->d_lineno = d_current_token->d_lineno;
+		binary_op_node->d_op_type = Operator::Mul;
+		binary_op_node->d_left = binary_op_lhs;
+		binary_op_node->d_right = binary_op_rhs;
+
+		auto variable_value = MakeNode<ASTExpressionNode>();
+		variable_value->d_lineno = d_current_token->d_lineno;
+		variable_value->d_value = binary_op_node;
+
+		auto assignment_node = MakeNode<ASTAssignmentNode>();
+		assignment_node->d_lineno = d_current_token->d_lineno;
+		assignment_node->d_left = variable_node;
+		assignment_node->d_right = variable_value;
+
+		return assignment_node;
+	}
+
+	NodeRef<ASTNode> TrentParser::ParseVariableDivisionAssignment()
+	{
+		auto variable_node = MakeNode<ASTVariableNode>(PreviousToken<IdentifierToken>()->d_value);
+		variable_node->d_lineno = d_current_token->d_lineno;
+
+		Expect(Operator::DivisionAssignment);
+
+		auto binary_op_lhs = MakeNode<ASTExpressionNode>();
+		binary_op_lhs->d_lineno = d_current_token->d_lineno;
+		binary_op_lhs->d_value = variable_node;
+
+		auto binary_op_rhs = ParseExpression();
+
+		auto binary_op_node = MakeNode<ASTBinaryOperatorNode>();
+		binary_op_node->d_lineno = d_current_token->d_lineno;
+		binary_op_node->d_op_type = Operator::Div;
+		binary_op_node->d_left = binary_op_lhs;
+		binary_op_node->d_right = binary_op_rhs;
+
+		auto variable_value = MakeNode<ASTExpressionNode>();
+		variable_value->d_lineno = d_current_token->d_lineno;
+		variable_value->d_value = binary_op_node;
+
+		auto assignment_node = MakeNode<ASTAssignmentNode>();
+		assignment_node->d_lineno = d_current_token->d_lineno;
+		assignment_node->d_left = variable_node;
+		assignment_node->d_right = variable_value;
+
+		return assignment_node;
+	}
+
 	NodeRef<ASTNode> TrentParser::ParseLiteralValue()
 	{
 		Expect(TokenType::LiteralValue);
@@ -414,6 +625,24 @@ namespace trent::parser
 		if (IsOperator(d_current_token, Operator::Assignment))
 			return ParseVariableAssignment();
 
+		if (IsOperator(d_current_token, Operator::Increment))
+			return ParseVariableIncrement();
+
+		if (IsOperator(d_current_token, Operator::Decrement))
+			return ParseVariableDecrement();
+
+		if (IsOperator(d_current_token, Operator::AdditionAssignment))
+			return ParseVariableAdditionAssignment();
+
+		if (IsOperator(d_current_token, Operator::SubtractionAssignment))
+			return ParseVariableSubtractionAssignment();
+
+		if (IsOperator(d_current_token, Operator::MultiplicationAssignment))
+			return ParseVariableMultiplicationAssignment();
+
+		if (IsOperator(d_current_token, Operator::DivisionAssignment))
+			return ParseVariableDivisionAssignment();
+
 		auto node = MakeNode<ASTVariableNode>(PreviousToken<IdentifierToken>()->d_value);
 		node->d_lineno = d_current_token->d_lineno;
 
@@ -433,6 +662,9 @@ namespace trent::parser
 		case Keyword::Return: {
 			return As<ASTNode>(ParseReturnStatement());
 		}
+		case Keyword::While: {
+			return ParseWhileLoop();
+		}
 		default: {
 			return nullptr;
 		}
@@ -447,11 +679,13 @@ namespace trent::parser
 			exception.Raise();
 			return nullptr;
 		}
-		else
+
+		// Checking if the operator is a binary operator
+		if (IsBinaryOperator(CurrentToken<OperatorToken>()->d_operator))
 		{
 			auto operator_node = MakeNode<ASTBinaryOperatorNode>();
 			operator_node->d_lineno = d_current_token->d_lineno;
-			operator_node->d_op_type = TokenOperatorToASTOperator(CurrentToken<OperatorToken>()->d_operator);
+			operator_node->d_op_type = CurrentToken<OperatorToken>()->d_operator;
 			operator_node->d_left = lhs;
 
 			Expect(TokenType::Operator);
@@ -460,6 +694,67 @@ namespace trent::parser
 
 			return operator_node;
 		}
+
+		// Checking if the operator is a boolean operator
+		if (IsBooleanOperator(CurrentToken<OperatorToken>()->d_operator))
+		{
+			auto operator_node = MakeNode<ASTBooleanOperatorNode>();
+			operator_node->d_lineno = d_current_token->d_lineno;
+			operator_node->d_op_type = CurrentToken<OperatorToken>()->d_operator;
+			operator_node->d_left = lhs;
+
+			Expect(TokenType::Operator);
+
+			operator_node->d_right = ParseExpression();
+
+			return operator_node;
+		}
+
+		auto exception = TrentException("Syntax Error", "Unrecognized operator", "Line " + std::to_string(d_current_token->d_lineno));
+		exception.Raise();
+		return nullptr;
+	}
+
+	NodeRef<ASTNode> TrentParser::ParseWhileLoop()
+	{
+		auto loop_node = MakeNode<ASTWhileLoopNode>();
+		loop_node->d_lineno = d_current_token->d_lineno;
+
+		Expect(Keyword::While);
+		Expect(Symbol::ParenthesisOpen);
+
+		auto condition = ParseExpression();
+		condition->d_lineno = d_current_token->d_lineno;
+
+		loop_node->d_condition = condition;
+
+		Expect(Symbol::ParenthesisClose);
+		Expect(Symbol::BraceOpen);
+
+		// Check if body is empty
+		if (IsSymbol(d_current_token, Symbol::BraceClose))
+			return condition;
+
+		// If the body of the function is not empty,
+		// start parsing the statements.
+		auto body_node = ParseStatement();
+		loop_node->d_body.push_back(body_node);
+
+		while (IsSymbol(d_current_token, Symbol::Semicolon))
+		{
+			Expect(Symbol::Semicolon);
+
+			// EOF or end of function body reached.
+			if (d_current_token == nullptr || IsSymbol(d_current_token, Symbol::BraceClose))
+				return loop_node;
+
+			body_node = ParseStatement();
+			loop_node->d_body.push_back(body_node);
+		}
+
+		Expect(Symbol::BraceClose);
+
+		return loop_node;
 	}
 
 	std::shared_ptr<AST> TrentParser::ConstructAST()
@@ -502,6 +797,81 @@ namespace trent::parser
 			else
 				program_root->d_children.push_back(node);
 		}
+
+		//// x
+		//auto xVar = MakeNode<ASTVariableNode>("x");
+		//
+		//auto xVarExpr = MakeNode<ASTExpressionNode>();
+		//xVarExpr->d_value = xVar;
+
+		//// var x = 0;
+		//auto xExpr = MakeNode<ASTExpressionNode>();
+		//xExpr->d_value = MakeNode<ASTLiteralValueNode>(LiteralType::Integer, "0");
+
+		//auto xDecl = MakeNode<ASTVariableDeclarationNode>();
+		//xDecl->d_variable_name = "x";
+		//xDecl->d_value = xExpr;
+
+		//// x < 10
+		//auto lhsExpr = MakeNode<ASTExpressionNode>();
+		//lhsExpr->d_value = xVar;
+
+		//auto rhsExpr = MakeNode<ASTExpressionNode>();
+		//rhsExpr->d_value = MakeNode<ASTLiteralValueNode>(LiteralType::Integer, "10");
+
+		//auto boolOp = MakeNode<ASTBooleanOperatorNode>();
+		//boolOp->d_op_type = Operator::LessThan;
+		//boolOp->d_left = lhsExpr;
+		//boolOp->d_right = rhsExpr;
+
+		//auto condition = MakeNode<ASTExpressionNode>();
+		//condition->d_value = boolOp;
+
+		//// x = x + 1;
+		//auto literal1Expr = MakeNode<ASTExpressionNode>();
+		//literal1Expr->d_value = MakeNode<ASTLiteralValueNode>(LiteralType::Integer, "1");
+
+		//auto addNode = MakeNode<ASTBinaryOperatorNode>();
+		//addNode->d_op_type = Operator::Add;
+		//addNode->d_left = xVarExpr;
+		//addNode->d_right = literal1Expr;
+
+		//auto addExpr = MakeNode<ASTExpressionNode>();
+		//addExpr->d_value = addNode;
+
+		//auto assignment = MakeNode<ASTAssignmentNode>();
+		//assignment->d_left = xVar;
+		//assignment->d_right = addExpr;
+
+		//// println(x);
+		//auto printParam = MakeNode<ASTExpressionNode>();
+		//printParam->d_value = xVar;
+
+		//auto printNode = MakeNode<ASTFunctionCallNode>();
+		//printNode->d_function_name = "println";
+		//printNode->d_arguments.push_back(printParam);
+
+		//// sleep(1000);
+		//auto sleepParam = MakeNode<ASTExpressionNode>();
+		//sleepParam->d_value = MakeNode<ASTLiteralValueNode>(LiteralType::Integer, "400");
+
+		//auto sleepNode = MakeNode<ASTFunctionCallNode>();
+		//sleepNode->d_function_name = "sleep";
+		//sleepNode->d_arguments.push_back(sleepParam);
+
+		//// while (x < 10) {
+		////     x = x + 1;
+		////     print(x);
+		////     sleep(1000);
+		//// }
+		//auto whileLoopNode = MakeNode<ASTWhileLoopNode>();
+		//whileLoopNode->d_condition = condition;
+		//whileLoopNode->d_body.push_back(assignment);
+		//whileLoopNode->d_body.push_back(printNode);
+		//whileLoopNode->d_body.push_back(sleepNode);
+
+		//program_root->d_children.push_back(xDecl);
+		//program_root->d_children.push_back(whileLoopNode);
 
 		ast->d_root = program_root;
 		return ast;

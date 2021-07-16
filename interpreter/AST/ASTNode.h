@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <cinttypes>
 
 namespace trent
 {
@@ -18,7 +19,9 @@ namespace trent
 		VariableDeclaration,
 		Block,
 		BinaryOperator,
-		Assignment
+		BooleanOperator,
+		Assignment,
+		WhileLoop
 	};
 
 	class ASTNode

@@ -1,5 +1,6 @@
 #include "TrentInteger.h"
 #include "TrentRuntime.h"
+#include "TrentBoolean.h"
 
 namespace trent
 {
@@ -77,5 +78,95 @@ namespace trent
 		}
 
 		return MAKE_TRENT_INT(this->d_value / reinterpret_cast<TrentInteger*>(obj)->d_value);
+	}
+	
+	TrentObject* TrentInteger::__operator_lt(TrentObject* obj)
+	{
+		if (strcmp(obj->GetRuntimeName(), "Int") != 0)
+		{
+			std::string ex_message = std::string("Cannot use < operator on types ") + GetRuntimeName() + std::string(" and ") + obj->GetRuntimeName();
+
+			auto exception = TrentException("TrentInteger", ex_message, "__operator_lt::Error");
+			exception.Raise();
+
+			return TrentObject_Null;
+		}
+
+		return MAKE_TRENT_BOOLEAN((this->d_value < reinterpret_cast<TrentInteger*>(obj)->d_value));
+	}
+	
+	TrentObject* TrentInteger::__operator_gt(TrentObject* obj)
+	{
+		if (strcmp(obj->GetRuntimeName(), "Int") != 0)
+		{
+			std::string ex_message = std::string("Cannot use > operator on types ") + GetRuntimeName() + std::string(" and ") + obj->GetRuntimeName();
+
+			auto exception = TrentException("TrentInteger", ex_message, "__operator_gt::Error");
+			exception.Raise();
+
+			return TrentObject_Null;
+		}
+
+		return MAKE_TRENT_BOOLEAN((this->d_value > reinterpret_cast<TrentInteger*>(obj)->d_value));
+	}
+	
+	TrentObject* TrentInteger::__operator_ltoe(TrentObject* obj)
+	{
+		if (strcmp(obj->GetRuntimeName(), "Int") != 0)
+		{
+			std::string ex_message = std::string("Cannot use <= operator on types ") + GetRuntimeName() + std::string(" and ") + obj->GetRuntimeName();
+
+			auto exception = TrentException("TrentInteger", ex_message, "__operator_ltoe::Error");
+			exception.Raise();
+
+			return TrentObject_Null;
+		}
+
+		return MAKE_TRENT_BOOLEAN((this->d_value <= reinterpret_cast<TrentInteger*>(obj)->d_value));
+	}
+	
+	TrentObject* TrentInteger::__operator_gtoe(TrentObject* obj)
+	{
+		if (strcmp(obj->GetRuntimeName(), "Int") != 0)
+		{
+			std::string ex_message = std::string("Cannot use >= operator on types ") + GetRuntimeName() + std::string(" and ") + obj->GetRuntimeName();
+
+			auto exception = TrentException("TrentInteger", ex_message, "__operator_gtoe::Error");
+			exception.Raise();
+
+			return TrentObject_Null;
+		}
+
+		return MAKE_TRENT_BOOLEAN((this->d_value >= reinterpret_cast<TrentInteger*>(obj)->d_value));
+	}
+	
+	TrentObject* TrentInteger::__operator_equequ(TrentObject* obj)
+	{
+		if (strcmp(obj->GetRuntimeName(), "Int") != 0)
+		{
+			std::string ex_message = std::string("Cannot use == operator on types ") + GetRuntimeName() + std::string(" and ") + obj->GetRuntimeName();
+
+			auto exception = TrentException("TrentInteger", ex_message, "__operator_equequ::Error");
+			exception.Raise();
+
+			return TrentObject_Null;
+		}
+
+		return MAKE_TRENT_BOOLEAN((this->d_value == reinterpret_cast<TrentInteger*>(obj)->d_value));
+	}
+	
+	TrentObject* TrentInteger::__operator_notequ(TrentObject* obj)
+	{
+		if (strcmp(obj->GetRuntimeName(), "Int") != 0)
+		{
+			std::string ex_message = std::string("Cannot use != operator on types ") + GetRuntimeName() + std::string(" and ") + obj->GetRuntimeName();
+
+			auto exception = TrentException("TrentInteger", ex_message, "__operator_notequ::Error");
+			exception.Raise();
+
+			return TrentObject_Null;
+		}
+
+		return MAKE_TRENT_BOOLEAN((this->d_value != reinterpret_cast<TrentInteger*>(obj)->d_value));
 	}
 }

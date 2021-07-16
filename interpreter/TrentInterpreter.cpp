@@ -31,7 +31,16 @@ namespace trent
 	{
 		parser::TrentParser parser;
 		parser.Initialize(source);
-		d_ast = parser.ConstructAST();
+		
+		try {
+			d_ast = parser.ConstructAST();
+		}
+		catch (...) {
+			auto exception = TrentException("Parser", "Failed to construct AST tree, please check for syntax errors", "InternalError");
+			exception.Raise();
+			return;
+		}
+
 
 		for (auto& node : d_ast->d_root->d_children)
 		{
@@ -64,6 +73,12 @@ namespace trent
 		case ASTNodeType::Expression: {
 			EvaluateExpressionNode(
 				std::reinterpret_pointer_cast<ASTExpressionNode>(node)
+			);
+			break;
+		}
+		case ASTNodeType::WhileLoop: {
+			EvaluateWhileLoopNode(
+				std::reinterpret_pointer_cast<ASTWhileLoopNode>(node)
 			);
 			break;
 		}
@@ -118,6 +133,21 @@ namespace trent
 		}
 
 		return nullptr;
+	}
+
+	void TrentInterpreter::UpdateRegisteredVariable(const std::string& name, TrentObject* obj)
+	{
+		// Iterating over variable stacks backwards
+		for (std::vector<VariableStack_t>::reverse_iterator it = d_variable_stacks.rbegin();
+			it != d_variable_stacks.rend(); ++it)
+		{
+			auto& stack = *it;
+			if (stack.find(name) != stack.end())
+			{
+				stack[name] = obj;
+				return;
+			}
+		}
 	}
 
 	void TrentInterpreter::RegisterVariable(const std::string& name, TrentObject* obj)
@@ -182,9 +212,7 @@ namespace trent
 		}
 
 		TrentObject* value = EvaluateExpressionNode(node->d_right);
-
-		auto& variable_stack = GetCurrentVariableStack();
-		variable_stack[node->d_left->d_variable_name] = value;
+		UpdateRegisteredVariable(node->d_left->d_variable_name, value);
 
 		return value;
 	}
@@ -290,6 +318,11 @@ namespace trent
 				std::reinterpret_pointer_cast<ASTBinaryOperatorNode>(node->d_value)
 			);
 		}
+		case ASTNodeType::BooleanOperator: {
+			return EvaluateBooleanOperatorNode(
+				std::reinterpret_pointer_cast<ASTBooleanOperatorNode>(node->d_value)
+			);
+		}
 		default: {
 			break;
 		}
@@ -308,21 +341,139 @@ namespace trent
 
 		switch (node->d_op_type)
 		{
-		case BinaryOperationType::ADD: {
+		case Operator::Add: {
 			return left_val->__operator_add(right_val);
 		}
-		case BinaryOperationType::SUB: {
+		case Operator::Sub: {
 			return left_val->__operator_sub(right_val);
 		}
-		case BinaryOperationType::MUL: {
+		case Operator::Mul: {
 			return left_val->__operator_mul(right_val);
 		}
-		case BinaryOperationType::DIV: {
+		case Operator::Div: {
 			return left_val->__operator_div(right_val);
 		}
 		default: {
 			break;
 		}
+		}
+
+		return TrentObject_Null;
+	}
+
+	TrentObject* TrentInterpreter::EvaluateBooleanOperatorNode(NodeRef<ASTBooleanOperatorNode> node)
+	{
+		// Tracking the current line of code.
+		d_current_lineno = node->d_lineno;
+
+		// The node isn't guaranteed to have a left expression,
+		// for example (!x) expression only has the ! operator
+		// and a right hand side x.
+		TrentObject* left_val = nullptr;
+		if (node->d_left)
+			left_val = EvaluateExpressionNode(node->d_left);
+
+		TrentObject* right_val = EvaluateExpressionNode(node->d_right);
+
+		auto LeftValueMustExist = [&]() {
+			if (left_val == nullptr)
+			{
+				auto exception = TrentException("RuntimeException", "No left hand side value provided", "EvaluateBooleanOperation");
+				exception.Raise();
+			}
+		};
+
+		auto ValueMustBeBoolean = [](TrentObject* value, const std::string& value_side) {
+			if (strcmp(value->GetRuntimeName(), "Boolean") != 0)
+			{
+				auto exception = TrentException("RuntimeException", value_side + " hand side must be a boolean", "EvaluateBooleanOperation");
+				exception.Raise();
+			}
+		};
+
+		switch (node->d_op_type)
+		{
+		case Operator::LessThan: {
+			LeftValueMustExist();
+			return left_val->__operator_lt(right_val);
+		}
+		case Operator::GreaterThan: {
+			LeftValueMustExist();
+			return left_val->__operator_gt(right_val);
+		}
+		case Operator::LessThanOrEqual: {
+			LeftValueMustExist();
+			return left_val->__operator_ltoe(right_val);
+		}
+		case Operator::GreaterThanOrEqual: {
+			LeftValueMustExist();
+			return left_val->__operator_gtoe(right_val);
+		}
+		case Operator::Equequ: {
+			LeftValueMustExist();
+			return left_val->__operator_equequ(right_val);
+		}
+		case Operator::Notequ: {
+			LeftValueMustExist();
+			return left_val->__operator_notequ(right_val);
+		}
+		case Operator::Not: {
+			ValueMustBeBoolean(right_val, "right");
+			
+			bool current_bool_value = reinterpret_cast<TrentBoolean*>(right_val)->GetValue();
+			return MAKE_TRENT_BOOLEAN(!current_bool_value);
+		}
+		case Operator::And: {
+			ValueMustBeBoolean(left_val, "left");
+			ValueMustBeBoolean(right_val, "right");
+			
+			bool current_left_bool_value = reinterpret_cast<TrentBoolean*>(left_val)->GetValue();
+			bool current_right_bool_value = reinterpret_cast<TrentBoolean*>(right_val)->GetValue();
+
+			return MAKE_TRENT_BOOLEAN(current_left_bool_value && current_right_bool_value);
+		}
+		case Operator::Or: {
+			ValueMustBeBoolean(left_val, "left");
+			ValueMustBeBoolean(right_val, "right");
+			
+			bool current_left_bool_value = reinterpret_cast<TrentBoolean*>(left_val)->GetValue();
+			bool current_right_bool_value = reinterpret_cast<TrentBoolean*>(right_val)->GetValue();
+
+			return MAKE_TRENT_BOOLEAN(current_left_bool_value || current_right_bool_value);
+		}
+		default: {
+			break;
+		}
+		}
+
+		return TrentObject_Null;
+	}
+
+	TrentObject* TrentInterpreter::EvaluateWhileLoopNode(NodeRef<ASTWhileLoopNode> node)
+	{
+		// Tracking the current line of code.
+		d_current_lineno = node->d_lineno;
+
+		auto condition_object = EvaluateExpressionNode(node->d_condition);
+		if (strcmp(condition_object->GetRuntimeName(), "Boolean") != 0)
+		{
+			auto exception = TrentException("RuntimeException", "condition expression must be a boolean", "EvaluateWhileLoopNode");
+			exception.Raise();
+			return TrentObject_Null;
+		}
+
+		while (reinterpret_cast<TrentBoolean*>(condition_object)->GetValue())
+		{
+			// Create new variable stack
+			PushVariableStack();
+
+			for (auto& body_node : node->d_body)
+				InterpretNode(body_node);
+
+			// Pop the variable stack
+			PopVariableStack();
+
+			condition_object = EvaluateExpressionNode(node->d_condition);
 		}
 
 		return TrentObject_Null;
@@ -337,11 +488,13 @@ namespace trent
 		{
 		case LiteralType::Integer: {
 			return MAKE_TRENT_INT(std::stoi(node->d_value));
-			break;
 		}
 		case LiteralType::String: {
 			return MAKE_TRENT_STRING(node->d_value.c_str());
-			break;
+		}
+		case LiteralType::Boolean: {
+			bool val = (node->d_value == "true");
+			return MAKE_TRENT_BOOLEAN(val);
 		}
 		default: {
 			break;

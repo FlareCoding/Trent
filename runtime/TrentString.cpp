@@ -1,5 +1,6 @@
 #include "TrentString.h"
 #include "TrentInteger.h"
+#include "TrentBoolean.h"
 #include "TrentRuntime.h"
 #include <algorithm>
 
@@ -50,6 +51,36 @@ namespace trent
 		return TrentObject_Null;
 	}
 
+	TrentObject* TrentString::__operator_equequ(TrentObject* obj)
+	{
+		if (strcmp(obj->GetRuntimeName(), "String") != 0)
+		{
+			std::string ex_message = std::string("Cannot use == operator on types ") + GetRuntimeName() + std::string(" and ") + obj->GetRuntimeName();
+
+			auto exception = TrentException("TrentString", ex_message, "__operator_equequ::Error");
+			exception.Raise();
+
+			return TrentObject_Null;
+		}
+
+		return MAKE_TRENT_BOOLEAN((this->d_buffer == reinterpret_cast<TrentString*>(obj)->d_buffer));
+	}
+
+	TrentObject* TrentString::__operator_notequ(TrentObject* obj)
+	{
+		if (strcmp(obj->GetRuntimeName(), "String") != 0)
+		{
+			std::string ex_message = std::string("Cannot use != operator on types ") + GetRuntimeName() + std::string(" and ") + obj->GetRuntimeName();
+
+			auto exception = TrentException("TrentString", ex_message, "__operator_notequ::Error");
+			exception.Raise();
+
+			return TrentObject_Null;
+		}
+
+		return MAKE_TRENT_BOOLEAN((this->d_buffer != reinterpret_cast<TrentString*>(obj)->d_buffer));
+	}
+
 	TrentObject* TrentString::__Length(TrentObject* args)
 	{
 		return MAKE_TRENT_INT((int)this->d_buffer.size());
@@ -63,7 +94,7 @@ namespace trent
 
 	TrentObject* TrentString::__Append(TrentObject* args)
 	{
-		char* str;
+		char* str = nullptr;
 		if (!TrentArg_Parse(args, "s", &str))
 		{
 			auto exception = TrentException("TrentString", "Failed to parse arguments", "__Append::Error");
@@ -72,10 +103,9 @@ namespace trent
 			return TrentObject_Null;
 		}
 
-#pragma warning(push)
-#pragma warning(disable: 6054)
-		d_buffer += str;
-#pragma warning(pop) 
+		if (str != nullptr)
+			d_buffer += str;
+
 		return TrentObject_Null;
 	}
 }

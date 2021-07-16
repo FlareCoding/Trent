@@ -35,4 +35,5 @@ target_link_libraries(TrentInterpreter PUBLIC TrentRuntime)
 add_custom_target(Tests
     SOURCES
         tests/main.trent
+        tests/loops.trent
 )

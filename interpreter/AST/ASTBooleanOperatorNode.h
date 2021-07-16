@@ -3,10 +3,10 @@
 
 namespace trent
 {
-	class ASTBinaryOperatorNode : public ASTNode
+	class ASTBooleanOperatorNode : public ASTNode
 	{
 	public:
-		ASTBinaryOperatorNode();
+		ASTBooleanOperatorNode();
 
 		Operator d_op_type;
 		NodeRef<ASTExpressionNode> d_left;

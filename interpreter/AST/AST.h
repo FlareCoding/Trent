@@ -6,8 +6,10 @@
 #include "ASTVariableNode.h"
 #include "ASTVariableDeclarationNode.h"
 #include "ASTBinaryOperatorNode.h"
+#include "ASTBooleanOperatorNode.h"
 #include "ASTFunctionDeclarationNode.h"
 #include "ASTAssignmentNode.h"
+#include "ASTWhileLoopNode.h"
 
 namespace trent
 {

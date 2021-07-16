@@ -13,6 +13,7 @@ set(
     runtime/TrentInteger.h
     runtime/TrentString.h
     runtime/TrentTuple.h
+    runtime/TrentBoolean.h
 
     PARENT_SCOPE
 )
@@ -26,6 +27,7 @@ set(
     runtime/TrentInteger.cpp
     runtime/TrentString.cpp
     runtime/TrentTuple.cpp
+    runtime/TrentBoolean.cpp
 
     PARENT_SCOPE
 )

@@ -7,7 +7,8 @@ namespace trent
 	{
 		Null,
 		Integer,
-		String
+		String,
+		Boolean
 	};
 
 	class ASTLiteralValueNode : public ASTNode

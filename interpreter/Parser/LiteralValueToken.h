@@ -1,6 +1,6 @@
 #pragma once
 #include "Token.h"
-#include "../AST/ASTLiteralValueNode.h"
+#include "AST/ASTLiteralValueNode.h"
 
 namespace trent::parser
 {

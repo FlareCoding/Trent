@@ -8,7 +8,13 @@ namespace trent::parser
 		Unknown = -1,
 		Var,
 		Func,
-		Return
+		Return,
+		While,
+		For,
+		Break,
+		If,
+		Elif,
+		Else
 	};
 
 	class KeywordToken : public Token
