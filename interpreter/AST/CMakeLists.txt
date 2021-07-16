@@ -1,0 +1,38 @@
+cmake_minimum_required(VERSION 3.0)
+
+set(CMAKE_CURRENT_SOURCE_DIR interpreter/AST)
+
+set(
+    TRENTAST_HEADERS
+
+    interpreter/AST/AST.h
+    interpreter/AST/ASTNode.h
+    interpreter/AST/ASTAssignmentNode.h
+    interpreter/AST/ASTBinaryOperatorNode.h
+    interpreter/AST/ASTExpressionNode.h
+    interpreter/AST/ASTFunctionCallNode.h
+    interpreter/AST/ASTFunctionDeclarationNode.h
+    interpreter/AST/ASTLiteralValueNode.h
+    interpreter/AST/ASTProgramNode.h
+    interpreter/AST/ASTVariableDeclarationNode.h
+    interpreter/AST/ASTVariableNode.h
+
+    PARENT_SCOPE
+)
+
+set(
+    TRENTAST_SOURCES
+
+    interpreter/AST/ASTNode.cpp
+    interpreter/AST/ASTAssignmentNode.cpp
+    interpreter/AST/ASTBinaryOperatorNode.cpp
+    interpreter/AST/ASTExpressionNode.cpp
+    interpreter/AST/ASTFunctionCallNode.cpp
+    interpreter/AST/ASTFunctionDeclarationNode.cpp
+    interpreter/AST/ASTLiteralValueNode.cpp
+    interpreter/AST/ASTProgramNode.cpp
+    interpreter/AST/ASTVariableDeclarationNode.cpp
+    interpreter/AST/ASTVariableNode.cpp
+
+    PARENT_SCOPE
+)
