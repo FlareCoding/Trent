@@ -14,5 +14,6 @@ namespace trent
 		static TrentObject* __TrentStdPrint(TrentObject* args);
 		static TrentObject* __TrentStdPrintln(TrentObject* args);
 		static TrentObject* __TrentStdScan(TrentObject* args);
+		static TrentObject* __TrentStdSleep(TrentObject* args);
 	};
 }
