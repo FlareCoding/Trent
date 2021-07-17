@@ -120,10 +120,10 @@ namespace trent::parser
 
 	bool TrentParser::IsSymbol(TokenRef<Token> token, Symbol symbol)
 	{
-		if (d_current_token->d_type != TokenType::Symbol)
+		if (token->d_type != TokenType::Symbol)
 			return false;
 
-		if (As<SymbolToken>(d_current_token)->d_symbol != symbol)
+		if (As<SymbolToken>(token)->d_symbol != symbol)
 			return false;
 
 		return true;
@@ -131,10 +131,10 @@ namespace trent::parser
 
 	bool TrentParser::IsKeyword(TokenRef<Token> token, Keyword keyword)
 	{
-		if (d_current_token->d_type != TokenType::Keyword)
+		if (token->d_type != TokenType::Keyword)
 			return false;
 
-		if (As<KeywordToken>(d_current_token)->d_keyword != keyword)
+		if (As<KeywordToken>(token)->d_keyword != keyword)
 			return false;
 
 		return true;
@@ -142,10 +142,10 @@ namespace trent::parser
 
 	bool TrentParser::IsOperator(TokenRef<Token> token, Operator op)
 	{
-		if (d_current_token->d_type != TokenType::Operator)
+		if (token->d_type != TokenType::Operator)
 			return false;
 
-		if (As<OperatorToken>(d_current_token)->d_operator != op)
+		if (As<OperatorToken>(token)->d_operator != op)
 			return false;
 
 		return true;
@@ -664,7 +664,12 @@ namespace trent::parser
 		case Keyword::For: {
 			return ParseForLoop();
 		}
+		case Keyword::If: {
+			return ParseIfElseStatement();
+		}
 		default: {
+			auto exception = TrentException("Line " + std::to_string(d_current_token->d_lineno), "Invalid keyword", "Parser");
+			exception.Raise();
 			return nullptr;
 		}
 		}
@@ -808,6 +813,131 @@ namespace trent::parser
 		Expect(Symbol::BraceClose);
 
 		return loop_node;
+	}
+
+	NodeRef<ASTNode> TrentParser::ParseIfElseStatement()
+	{
+		auto if_else_node = MakeNode<ASTIfElseStatementNode>();
+		if_else_node->d_lineno = d_current_token->d_lineno;
+
+		Expect(Keyword::If);
+		Expect(Symbol::ParenthesisOpen);
+
+		// Parsing the "if" condition
+		auto condition = ParseExpression();
+		if_else_node->d_if_statement.first = condition;
+
+		Expect(Symbol::ParenthesisClose);
+		Expect(Symbol::BraceOpen);
+
+		NodeRef<ASTNode> body_node = nullptr;
+
+		// If the body of the if statement is not empty,
+		// start parsing the statements.
+		if (!IsSymbol(d_current_token, Symbol::BraceClose))
+		{
+			// Parse the first statement
+			body_node = ParseStatement();
+			if_else_node->d_if_statement.second.push_back(body_node);
+
+			while (IsSymbol(d_current_token, Symbol::Semicolon) || IsSymbol(d_current_token, Symbol::BraceClose))
+			{
+				if (IsSymbol(d_current_token, Symbol::Semicolon))
+					Expect(Symbol::Semicolon);
+				else
+					Expect(Symbol::BraceClose);
+
+				// EOF or end of function body reached.
+				if (d_current_token == nullptr || IsSymbol(d_current_token, Symbol::BraceClose))
+					break;
+
+				body_node = ParseStatement();
+				if_else_node->d_if_statement.second.push_back(body_node);
+			}
+		}
+
+		// If the else if statement exists
+		while (IsKeyword(NextToken(), Keyword::Elif))
+		{
+			Expect(Symbol::BraceClose);
+			Expect(Keyword::Elif);
+
+			Expect(Symbol::ParenthesisOpen);
+
+			ConditionBodyBinding_t binding;
+
+			// Parsing the "elif" condition
+			condition = ParseExpression();
+			binding.first = condition;
+
+			Expect(Symbol::ParenthesisClose);
+			Expect(Symbol::BraceOpen);
+
+			body_node = nullptr;
+
+			// If the body of the elif statement is not empty,
+			// start parsing the statements.
+			if (!IsSymbol(d_current_token, Symbol::BraceClose))
+			{
+				// Parse the first statement
+				body_node = ParseStatement();
+				binding.second.push_back(body_node);
+
+				while (IsSymbol(d_current_token, Symbol::Semicolon) || IsSymbol(d_current_token, Symbol::BraceClose))
+				{
+					if (IsSymbol(d_current_token, Symbol::Semicolon))
+						Expect(Symbol::Semicolon);
+					else
+						Expect(Symbol::BraceClose);
+
+					// EOF or end of function body reached.
+					if (d_current_token == nullptr || IsSymbol(d_current_token, Symbol::BraceClose))
+						break;
+
+					body_node = ParseStatement();
+					binding.second.push_back(body_node);
+				}
+			}
+
+			// Add the elif statement binding
+			if_else_node->d_else_if_statements.push_back(binding);
+		}
+
+		// Check if "else" statement is present
+		if (IsKeyword(NextToken(), Keyword::Else))
+		{
+			Expect(Symbol::BraceClose);
+			Expect(Keyword::Else);
+			Expect(Symbol::BraceOpen);
+
+			body_node = nullptr;
+
+			// If the body of the elif statement is not empty,
+			// start parsing the statements.
+			if (!IsSymbol(d_current_token, Symbol::BraceClose))
+			{
+				// Parse the first statement
+				body_node = ParseStatement();
+				if_else_node->d_else_statement_body.push_back(body_node);
+
+				while (IsSymbol(d_current_token, Symbol::Semicolon) || IsSymbol(d_current_token, Symbol::BraceClose))
+				{
+					if (IsSymbol(d_current_token, Symbol::Semicolon))
+						Expect(Symbol::Semicolon);
+					else
+						Expect(Symbol::BraceClose);
+
+					// EOF or end of function body reached.
+					if (d_current_token == nullptr || IsSymbol(d_current_token, Symbol::BraceClose))
+						break;
+
+					body_node = ParseStatement();
+					if_else_node->d_else_statement_body.push_back(body_node);
+				}
+			}
+		}
+
+		return if_else_node;
 	}
 
 	std::shared_ptr<AST> TrentParser::ConstructAST()

@@ -76,6 +76,7 @@ namespace trent::parser
 
 		NodeRef<ASTNode>			ParseWhileLoop();
 		NodeRef<ASTNode>			ParseForLoop();
+		NodeRef<ASTNode>			ParseIfElseStatement();
 
 	private:
 		// Contains all the tokens

@@ -1,3 +1,4 @@
+
 func test_fn()
 {
 	for (var i = 0; i < 5; i++)
@@ -16,10 +17,13 @@ func test_fn()
 
 func foo()
 {
-	for (var i = 0; i < 10; i++) {
+	for (var i = 1; i < 10; i++) {
 		test_fn();
 		println();
-		break;
+		
+		if (i == 3) {
+			break;
+		}
 	}
 
 	return "foo executed";
@@ -29,3 +33,25 @@ var result = foo();
 
 print("Result: ");
 println(result);
+
+for (var i = 0; i < 5; i++)
+{
+	if (i == 0)
+	{
+		println("i is zero");
+	}
+	elseif (i == 1)
+	{
+		println("i is one");
+	}
+	elseif (i == 2)
+	{
+		println("i is two!");
+	}
+	else
+	{
+		println("i is something else :O");
+	}
+}
+
+println("\nFinal message: thank you!\n");

@@ -98,6 +98,11 @@ namespace trent
 			);
 			break;
 		}
+		case ASTNodeType::IfElseStatement: {
+			return EvaluateIfElseStatementNode(
+				std::reinterpret_pointer_cast<ASTIfElseStatementNode>(node)
+			);
+		}
 		default: {
 			break;
 		}
@@ -615,7 +620,7 @@ namespace trent
 		auto condition_object = EvaluateExpressionNode(node->d_condition);
 		if (strcmp(condition_object->GetRuntimeName(), "Boolean") != 0)
 		{
-			auto exception = TrentException("RuntimeException", "condition expression must be a boolean", "EvaluateWhileLoopNode");
+			auto exception = TrentException("RuntimeException", "condition expression must be a boolean", "EvaluateForLoopNode");
 			exception.Raise();
 			return TrentObject_Null;
 		}
@@ -673,6 +678,114 @@ namespace trent
 	TrentObject* TrentInterpreter::EvaluateBreakStatementNode(NodeRef<ASTBreakStatementNode> node)
 	{
 		SetLoopBreakState();
+		return TrentObject_Null;
+	}
+
+	TrentObject* TrentInterpreter::EvaluateIfElseStatementNode(NodeRef<ASTIfElseStatementNode> node)
+	{
+		// Tracking the current line of code.
+		d_current_lineno = node->d_lineno;
+
+		// Check the "if" condition
+		auto condition_object = EvaluateExpressionNode(node->d_if_statement.first);
+		if (strcmp(condition_object->GetRuntimeName(), "Boolean") != 0)
+		{
+			auto exception = TrentException("RuntimeException", "condition expression must be a boolean", "EvaluateIfElseStatementNode");
+			exception.Raise();
+			return TrentObject_Null;
+		}
+
+		if (reinterpret_cast<TrentBoolean*>(condition_object)->GetValue())
+		{
+			// Create new variable stack
+			PushVariableStack();
+
+			for (auto& body_node : node->d_if_statement.second)
+			{
+				TrentObject* interpreted_result = InterpretNode(body_node);
+
+				// Check if current function needs returning
+				if (DoesFunctionNeedReturning())
+					return interpreted_result;
+
+				// Check if loop needs to be broken out of
+				if (DoesLoopNeedBreaking())
+					break;
+			}
+
+			// Pop the variable stack
+			PopVariableStack();
+		}
+		else
+		{
+			bool need_to_execute_else_block = true;
+
+			// Check if "elif" statements need to be executed
+			if (node->d_else_if_statements.size())
+			{
+				for (auto& elif_statement : node->d_else_if_statements)
+				{
+					condition_object = EvaluateExpressionNode(elif_statement.first);
+					if (strcmp(condition_object->GetRuntimeName(), "Boolean") != 0)
+					{
+						auto exception = TrentException("RuntimeException", "condition expression must be a boolean", "EvaluateIfElseStatementNode");
+						exception.Raise();
+						return TrentObject_Null;
+					}
+
+					if (reinterpret_cast<TrentBoolean*>(condition_object)->GetValue())
+					{
+						need_to_execute_else_block = false;
+
+						// Create new variable stack
+						PushVariableStack();
+
+						for (auto& body_node : elif_statement.second)
+						{
+							TrentObject* interpreted_result = InterpretNode(body_node);
+
+							// Check if current function needs returning
+							if (DoesFunctionNeedReturning())
+								return interpreted_result;
+
+							// Check if loop needs to be broken out of
+							if (DoesLoopNeedBreaking())
+								break;
+						}
+
+						// Pop the variable stack
+						PopVariableStack();
+
+						// Stop looping through elif statements
+						break;
+					}
+				}
+			}
+
+			// Check if "else" block needs execution
+			if (need_to_execute_else_block && node->d_else_statement_body.size())
+			{
+				// Create new variable stack
+				PushVariableStack();
+
+				for (auto& body_node : node->d_else_statement_body)
+				{
+					TrentObject* interpreted_result = InterpretNode(body_node);
+
+					// Check if current function needs returning
+					if (DoesFunctionNeedReturning())
+						return interpreted_result;
+
+					// Check if loop needs to be broken out of
+					if (DoesLoopNeedBreaking())
+						break;
+				}
+
+				// Pop the variable stack
+				PopVariableStack();
+			}
+		}
+
 		return TrentObject_Null;
 	}
 

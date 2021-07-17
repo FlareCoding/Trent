@@ -26,7 +26,7 @@ namespace trent::parser::lexer
 			{ "for",		Keyword::For	},
 			{ "break",		Keyword::Break	},
 			{ "if",			Keyword::If		},
-			{ "elif",		Keyword::Elif	},
+			{ "elseif",		Keyword::Elif	},
 			{ "else",		Keyword::Else	},
 		};
 

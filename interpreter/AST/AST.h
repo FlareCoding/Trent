@@ -13,6 +13,7 @@
 #include "ASTForLoopNode.h"
 #include "ASTReturnStatementNode.h"
 #include "ASTBreakStatementNode.h"
+#include "ASTIfElseStatementNode.h"
 
 namespace trent
 {

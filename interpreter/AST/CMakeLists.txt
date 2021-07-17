@@ -21,6 +21,7 @@ set(
     interpreter/AST/ASTForLoopNode.h
     interpreter/AST/ASTReturnStatementNode.h
     interpreter/AST/ASTBreakStatementNode.h
+    interpreter/AST/ASTIfElseStatementNode.h
 
     PARENT_SCOPE
 )
@@ -43,6 +44,7 @@ set(
     interpreter/AST/ASTForLoopNode.cpp
     interpreter/AST/ASTReturnStatementNode.cpp
     interpreter/AST/ASTBreakStatementNode.cpp
+    interpreter/AST/ASTIfElseStatementNode.cpp
 
     PARENT_SCOPE
 )

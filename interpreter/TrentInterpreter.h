@@ -69,6 +69,7 @@ namespace trent
 
 		TrentObject* EvaluateReturnStatementNode(NodeRef<ASTReturnStatementNode> node);
 		TrentObject* EvaluateBreakStatementNode(NodeRef<ASTBreakStatementNode> node);
+		TrentObject* EvaluateIfElseStatementNode(NodeRef<ASTIfElseStatementNode> node);
 
 		TrentObject* EvaluateVariableDeclarationNode(NodeRef<ASTVariableDeclarationNode> node);
 		TrentObject* EvaluateVariableNode(NodeRef<ASTVariableNode> node);
