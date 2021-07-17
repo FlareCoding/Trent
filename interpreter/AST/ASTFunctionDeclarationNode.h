@@ -14,6 +14,7 @@ namespace trent
 		std::vector<NodeRef<ASTVariableNode>>	d_parameters;
 		std::vector<NodeRef<ASTNode>>			d_body;
 
+		// **Important: Will be set at runtime by the interpreter.
 		NodeRef<ASTExpressionNode>				d_return_value;
 	};
 }

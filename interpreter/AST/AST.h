@@ -11,6 +11,7 @@
 #include "ASTAssignmentNode.h"
 #include "ASTWhileLoopNode.h"
 #include "ASTForLoopNode.h"
+#include "ASTReturnStatementNode.h"
 
 namespace trent
 {

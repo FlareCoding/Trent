@@ -19,6 +19,7 @@ set(
     interpreter/AST/ASTVariableNode.h
     interpreter/AST/ASTWhileLoopNode.h
     interpreter/AST/ASTForLoopNode.h
+    interpreter/AST/ASTReturnStatementNode.h
 
     PARENT_SCOPE
 )
@@ -39,6 +40,7 @@ set(
     interpreter/AST/ASTVariableNode.cpp
     interpreter/AST/ASTWhileLoopNode.cpp
     interpreter/AST/ASTForLoopNode.cpp
+    interpreter/AST/ASTReturnStatementNode.cpp
 
     PARENT_SCOPE
 )

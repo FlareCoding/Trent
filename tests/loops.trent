@@ -1,12 +1,36 @@
-
-for (var i = 5; i >= 0; i--)
+func test_fn()
 {
-	for (var j = 0; j < 2; j++)
+	for (var i = 0; i < 4; i++)
 	{
-		println("Value of j: " + j);
-		sleep(200);
+		while (true)
+		{
+			println("before return");
+			return 3;
+		}
+
+		return 2;
 	}
 
-	println("\nValue of i: " + i);
-	sleep(400);
+	return 1;
+
+	println("after return statement");
 }
+
+func foo()
+{
+	println("foo executing...");
+	return test_fn();
+	println("foo after return statement??");
+}
+
+func bar()
+{
+	println("bar executing...");
+	return foo();
+	println("bar after return??");
+}
+
+var result = bar();
+
+print("Result: ");
+println(result);

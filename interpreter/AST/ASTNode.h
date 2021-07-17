@@ -22,7 +22,8 @@ namespace trent
 		BooleanOperator,
 		Assignment,
 		WhileLoop,
-		ForLoop
+		ForLoop,
+		ReturnStatement
 	};
 
 	class ASTNode

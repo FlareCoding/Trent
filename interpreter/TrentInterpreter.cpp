@@ -48,7 +48,7 @@ namespace trent
 		}
 	}
 
-	void TrentInterpreter::InterpretNode(NodeRef<ASTNode> node)
+	TrentObject* TrentInterpreter::InterpretNode(NodeRef<ASTNode> node)
 	{
 		switch (node->d_type)
 		{
@@ -59,10 +59,9 @@ namespace trent
 			break;
 		}
 		case ASTNodeType::FunctionCall: {
-			TrentObject* result = EvaluateFunctionCallNode(
+			return EvaluateFunctionCallNode(
 				std::reinterpret_pointer_cast<ASTFunctionCallNode>(node)
 			);
-			break;
 		}
 		case ASTNodeType::Assignment: {
 			EvaluateAssignmentNode(
@@ -77,21 +76,26 @@ namespace trent
 			break;
 		}
 		case ASTNodeType::WhileLoop: {
-			EvaluateWhileLoopNode(
+			return EvaluateWhileLoopNode(
 				std::reinterpret_pointer_cast<ASTWhileLoopNode>(node)
 			);
-			break;
 		}
 		case ASTNodeType::ForLoop: {
-			EvaluateForLoopNode(
+			return EvaluateForLoopNode(
 				std::reinterpret_pointer_cast<ASTForLoopNode>(node)
 			);
-			break;
+		}
+		case ASTNodeType::ReturnStatement: {
+			return EvaluateReturnStatementNode(
+				std::reinterpret_pointer_cast<ASTReturnStatementNode>(node)
+			);
 		}
 		default: {
 			break;
 		}
 		}
+
+		return TrentObject_Null;
 	}
 
 	void TrentInterpreter::ExceptionObserver(TrentException* e)
@@ -108,6 +112,32 @@ namespace trent
 			return d_registered_functions[name];
 		else
 			return nullptr;
+	}
+
+	void TrentInterpreter::PushFunctionFrame(const std::string& name)
+	{
+		d_function_call_stack.push_back({ name, false });
+	}
+
+	void TrentInterpreter::PopFunctionFrame()
+	{
+		// The global program-wide frame should never be popped
+		if (d_function_call_stack.size())
+			d_function_call_stack.pop_back();
+	}
+
+	bool TrentInterpreter::DoesFunctionNeedReturning()
+	{
+		if (d_function_call_stack.size() == 0)
+			return false;
+
+		return d_function_call_stack[d_function_call_stack.size() - 1].second;
+	}
+
+	void TrentInterpreter::SetFunctionReturnState()
+	{
+		if (d_function_call_stack.size())
+			d_function_call_stack[d_function_call_stack.size() - 1].second = true;
 	}
 
 	TrentInterpreter::VariableStack_t& TrentInterpreter::GetCurrentVariableStack()
@@ -257,6 +287,7 @@ namespace trent
 			auto FunctionDeclarationNode = d_ast->d_functions[node->d_function_name];
 
 			// Register arguments as new variables on the newly created stack
+			PushFunctionFrame(node->d_function_name);
 			PushVariableStack();
 
 			for (size_t i = 0; i < args.size(); i++)
@@ -269,7 +300,9 @@ namespace trent
 			}
 
 			TrentObject* result = EvaluateUserDefinedFunctionCallNode(node->d_function_name);
+
 			PopVariableStack();
+			PopFunctionFrame();
 
 			return result;
 		}
@@ -283,10 +316,14 @@ namespace trent
 
 		for (auto& node : FunctionDeclarationNode->d_body)
 		{
-			InterpretNode(node);
+			TrentObject* interpreted_result = InterpretNode(node);
+
+			// Check if current function needs returning
+			if (DoesFunctionNeedReturning())
+				return interpreted_result;
 		}
 
-		return EvaluateExpressionNode(FunctionDeclarationNode->d_return_value);
+		return TrentObject_Null;
 	}
 
 	TrentObject* TrentInterpreter::EvaluateExpressionNode(NodeRef<ASTExpressionNode> node)
@@ -471,7 +508,13 @@ namespace trent
 			PushVariableStack();
 
 			for (auto& body_node : node->d_body)
-				InterpretNode(body_node);
+			{
+				TrentObject* interpreted_result = InterpretNode(body_node);
+
+				// Check if current function needs returning
+				if (DoesFunctionNeedReturning())
+					return interpreted_result;
+			}
 
 			// Pop the variable stack
 			PopVariableStack();
@@ -508,7 +551,13 @@ namespace trent
 
 			// Execute body statements
 			for (auto& body_node : node->d_body)
-				InterpretNode(body_node);
+			{
+				TrentObject* interpreted_result = InterpretNode(body_node);
+
+				// Check if current function needs returning
+				if (DoesFunctionNeedReturning())
+					return interpreted_result;
+			}
 
 			// Pop the body's variable stack
 			PopVariableStack();
@@ -524,6 +573,12 @@ namespace trent
 		PopVariableStack();
 
 		return TrentObject_Null;
+	}
+
+	TrentObject* TrentInterpreter::EvaluateReturnStatementNode(NodeRef<ASTReturnStatementNode> node)
+	{
+		SetFunctionReturnState();
+		return EvaluateExpressionNode(node->d_return_value);
 	}
 
 	TrentObject* TrentInterpreter::EvaluateLiteralValueNode(NodeRef<ASTLiteralValueNode> node)

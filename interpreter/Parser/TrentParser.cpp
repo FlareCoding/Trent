@@ -246,7 +246,7 @@ namespace trent::parser
 
 		auto function_declaration_node = MakeNode<ASTFunctionDeclarationNode>();
 		function_declaration_node->d_lineno = d_current_token->d_lineno;
-		//function_declaration_node->d_return_value = null_expr_node;
+		function_declaration_node->d_return_value = null_expr_node;
 
 		Expect(Keyword::Func);
 		function_declaration_node->d_function_name = CurrentToken<IdentifierToken>()->d_value;
@@ -285,44 +285,17 @@ namespace trent::parser
 		if (IsSymbol(d_current_token, Symbol::BraceClose))
 			return function_declaration_node;
 
-		// Check if return statement is immediately present
-		if (IsKeyword(d_current_token, Keyword::Return))
-		{
-			// Setting the return statement
-			function_declaration_node->d_return_value = ParseReturnStatement();
-
-			// Looping until the end of the function
-			// ultimately skipping all the next tokens since
-			// they won't get executed.
-			while (!IsSymbol(d_current_token, Symbol::BraceClose))
-				d_current_token = d_token_pool->Next(d_current_token);
-
-			return function_declaration_node;
-		}
-
 		// If the body of the function is not empty,
 		// start parsing the statements.
 		auto body_node = ParseStatement();
 		function_declaration_node->d_body.push_back(body_node);
 
-		while (IsSymbol(d_current_token, Symbol::Semicolon))
+		while (IsSymbol(d_current_token, Symbol::Semicolon) || IsSymbol(d_current_token, Symbol::BraceClose))
 		{
-			Expect(Symbol::Semicolon);
-
-			// Check for a return statement
-			if (IsKeyword(d_current_token, Keyword::Return))
-			{
-				// Setting the return statement
-				function_declaration_node->d_return_value = ParseReturnStatement();
-
-				// Looping until the end of the function
-				// ultimately skipping all the next tokens since
-				// they won't get executed.
-				while (!IsSymbol(d_current_token, Symbol::BraceClose))
-					d_current_token = d_token_pool->Next(d_current_token);
-
-				return function_declaration_node;
-			}
+			if (IsSymbol(d_current_token, Symbol::Semicolon))
+				Expect(Symbol::Semicolon);
+			else
+				Expect(Symbol::BraceClose);
 
 			// EOF or end of function body reached.
 			if (d_current_token == nullptr || IsSymbol(d_current_token, Symbol::BraceClose))
@@ -337,11 +310,21 @@ namespace trent::parser
 		return function_declaration_node;
 	}
 
-	NodeRef<ASTExpressionNode> TrentParser::ParseReturnStatement()
+	NodeRef<ASTNode> TrentParser::ParseReturnStatement()
 	{
 		Expect(Keyword::Return);
 
-		return ParseExpression();
+		auto return_statement_node = MakeNode<ASTReturnStatementNode>();
+		return_statement_node->d_lineno = d_current_token->d_lineno;
+
+		// Void return 
+		if (IsSymbol(d_current_token, Symbol::Semicolon))
+			return return_statement_node;
+		
+		// Parse the return value expression
+		return_statement_node->d_return_value = ParseExpression();
+
+		return return_statement_node;
 	}
 
 	NodeRef<ASTNode> TrentParser::ParseFunctionCall()
@@ -660,7 +643,7 @@ namespace trent::parser
 			return ParseFunctionDeclaration();
 		}
 		case Keyword::Return: {
-			return As<ASTNode>(ParseReturnStatement());
+			return ParseReturnStatement();
 		}
 		case Keyword::While: {
 			return ParseWhileLoop();

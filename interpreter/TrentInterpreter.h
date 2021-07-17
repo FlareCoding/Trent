@@ -18,7 +18,7 @@ namespace trent
 		void ExceptionObserver(TrentException* e);
 
 	private:
-		void InterpretNode(NodeRef<ASTNode> node);
+		TrentObject* InterpretNode(NodeRef<ASTNode> node);
 
 	private:
 		std::unordered_map<std::string, TrentObject::member_fn_t> d_registered_functions;
@@ -37,6 +37,13 @@ namespace trent
 		void UpdateRegisteredVariable(const std::string& name, TrentObject* obj);
 
 	private:
+		std::vector<std::pair<std::string, bool>> d_function_call_stack;
+		void PushFunctionFrame(const std::string& name);
+		void PopFunctionFrame();
+		bool DoesFunctionNeedReturning();
+		void SetFunctionReturnState();
+
+	private:
 		TrentObject* EvaluateLiteralValueNode(NodeRef<ASTLiteralValueNode> node);
 		TrentObject* EvaluateExpressionNode(NodeRef<ASTExpressionNode> node);
 		TrentObject* EvaluateBinaryOperatorNode(NodeRef<ASTBinaryOperatorNode> node);
@@ -44,6 +51,8 @@ namespace trent
 
 		TrentObject* EvaluateWhileLoopNode(NodeRef<ASTWhileLoopNode> node);
 		TrentObject* EvaluateForLoopNode(NodeRef<ASTForLoopNode> node);
+
+		TrentObject* EvaluateReturnStatementNode(NodeRef<ASTReturnStatementNode> node);
 
 		TrentObject* EvaluateVariableDeclarationNode(NodeRef<ASTVariableDeclarationNode> node);
 		TrentObject* EvaluateVariableNode(NodeRef<ASTVariableNode> node);
