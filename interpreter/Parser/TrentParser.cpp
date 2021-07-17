@@ -665,6 +665,9 @@ namespace trent::parser
 		case Keyword::While: {
 			return ParseWhileLoop();
 		}
+		case Keyword::For: {
+			return ParseForLoop();
+		}
 		default: {
 			return nullptr;
 		}
@@ -733,9 +736,60 @@ namespace trent::parser
 
 		// Check if body is empty
 		if (IsSymbol(d_current_token, Symbol::BraceClose))
-			return condition;
+			return loop_node;
 
-		// If the body of the function is not empty,
+		// If the body of the loop is not empty,
+		// start parsing the statements.
+		auto body_node = ParseStatement();
+		loop_node->d_body.push_back(body_node);
+
+		while (IsSymbol(d_current_token, Symbol::Semicolon) || IsSymbol(d_current_token, Symbol::BraceClose))
+		{
+			if (CurrentToken<SymbolToken>()->d_symbol == Symbol::Semicolon)
+				Expect(Symbol::Semicolon);
+			else
+				Expect(Symbol::BraceClose);
+
+			// EOF or end of function body reached.
+			if (d_current_token == nullptr || IsSymbol(d_current_token, Symbol::BraceClose))
+				return loop_node;
+
+			body_node = ParseStatement();
+			loop_node->d_body.push_back(body_node);
+		}
+
+		Expect(Symbol::BraceClose);
+
+		return loop_node;
+	}
+
+	NodeRef<ASTNode> TrentParser::ParseForLoop()
+	{
+		auto loop_node = MakeNode<ASTForLoopNode>();
+		loop_node->d_lineno = d_current_token->d_lineno;
+
+		Expect(Keyword::For);
+		Expect(Symbol::ParenthesisOpen);
+
+		// Parse initializer
+		loop_node->d_initializer = ParseStatement();
+		Expect(Symbol::Semicolon);
+
+		// Parse condition
+		loop_node->d_condition = ParseExpression();
+		Expect(Symbol::Semicolon);
+
+		// Parse increment
+		loop_node->d_increment = ParseStatement();
+
+		Expect(Symbol::ParenthesisClose);
+		Expect(Symbol::BraceOpen);
+
+		// Check if body is empty
+		if (IsSymbol(d_current_token, Symbol::BraceClose))
+			return loop_node;
+
+		// If the body of the loop is not empty,
 		// start parsing the statements.
 		auto body_node = ParseStatement();
 		loop_node->d_body.push_back(body_node);
@@ -764,6 +818,12 @@ namespace trent::parser
 	{
 		auto ast = std::make_shared<AST>();
 		auto program_root = MakeNode<ASTProgramNode>();
+
+		if (d_token_pool->__GetAllTokens().size() == 0)
+		{
+			ast->d_root = program_root;
+			return ast;
+		}
 
 		auto node = ParseStatement();
 		if (node->d_type == ASTNodeType::FunctionDeclaration)
@@ -800,81 +860,6 @@ namespace trent::parser
 			else
 				program_root->d_children.push_back(node);
 		}
-
-		//// x
-		//auto xVar = MakeNode<ASTVariableNode>("x");
-		//
-		//auto xVarExpr = MakeNode<ASTExpressionNode>();
-		//xVarExpr->d_value = xVar;
-
-		//// var x = 0;
-		//auto xExpr = MakeNode<ASTExpressionNode>();
-		//xExpr->d_value = MakeNode<ASTLiteralValueNode>(LiteralType::Integer, "0");
-
-		//auto xDecl = MakeNode<ASTVariableDeclarationNode>();
-		//xDecl->d_variable_name = "x";
-		//xDecl->d_value = xExpr;
-
-		//// x < 10
-		//auto lhsExpr = MakeNode<ASTExpressionNode>();
-		//lhsExpr->d_value = xVar;
-
-		//auto rhsExpr = MakeNode<ASTExpressionNode>();
-		//rhsExpr->d_value = MakeNode<ASTLiteralValueNode>(LiteralType::Integer, "10");
-
-		//auto boolOp = MakeNode<ASTBooleanOperatorNode>();
-		//boolOp->d_op_type = Operator::LessThan;
-		//boolOp->d_left = lhsExpr;
-		//boolOp->d_right = rhsExpr;
-
-		//auto condition = MakeNode<ASTExpressionNode>();
-		//condition->d_value = boolOp;
-
-		//// x = x + 1;
-		//auto literal1Expr = MakeNode<ASTExpressionNode>();
-		//literal1Expr->d_value = MakeNode<ASTLiteralValueNode>(LiteralType::Integer, "1");
-
-		//auto addNode = MakeNode<ASTBinaryOperatorNode>();
-		//addNode->d_op_type = Operator::Add;
-		//addNode->d_left = xVarExpr;
-		//addNode->d_right = literal1Expr;
-
-		//auto addExpr = MakeNode<ASTExpressionNode>();
-		//addExpr->d_value = addNode;
-
-		//auto assignment = MakeNode<ASTAssignmentNode>();
-		//assignment->d_left = xVar;
-		//assignment->d_right = addExpr;
-
-		//// println(x);
-		//auto printParam = MakeNode<ASTExpressionNode>();
-		//printParam->d_value = xVar;
-
-		//auto printNode = MakeNode<ASTFunctionCallNode>();
-		//printNode->d_function_name = "println";
-		//printNode->d_arguments.push_back(printParam);
-
-		//// sleep(1000);
-		//auto sleepParam = MakeNode<ASTExpressionNode>();
-		//sleepParam->d_value = MakeNode<ASTLiteralValueNode>(LiteralType::Integer, "400");
-
-		//auto sleepNode = MakeNode<ASTFunctionCallNode>();
-		//sleepNode->d_function_name = "sleep";
-		//sleepNode->d_arguments.push_back(sleepParam);
-
-		//// while (x < 10) {
-		////     x = x + 1;
-		////     print(x);
-		////     sleep(1000);
-		//// }
-		//auto whileLoopNode = MakeNode<ASTWhileLoopNode>();
-		//whileLoopNode->d_condition = condition;
-		//whileLoopNode->d_body.push_back(assignment);
-		//whileLoopNode->d_body.push_back(printNode);
-		//whileLoopNode->d_body.push_back(sleepNode);
-
-		//program_root->d_children.push_back(xDecl);
-		//program_root->d_children.push_back(whileLoopNode);
 
 		ast->d_root = program_root;
 		return ast;

@@ -141,7 +141,7 @@ namespace trent::parser::lexer
 
 	void TrentLexer::ParseWord(const std::string& line, size_t lineno)
 	{
-		std::regex rx(R"(/=|\*=|\-=|\-\-|\+=|\+\+|!=|==|&&|\|\||[!();:=.,{}\[\]+*/\-])");
+		std::regex rx(R"(>=|<=|/=|\*=|\-=|\-\-|\+=|\+\+|!=|==|&&|\|\||[!();:=.,{}\[\]+*/\-])");
 		std::sregex_token_iterator srti(line.begin(), line.end(), rx, { -1, 0 });
 		std::vector<std::string> tokens;
 		std::remove_copy_if(srti, std::sregex_token_iterator(),

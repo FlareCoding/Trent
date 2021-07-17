@@ -1,17 +1,12 @@
 
-func doMagic() {
-	while (true) {
-		var x = 0;
-	
-		while (x < 10) {
-			x++;
-			println("Value of x: " + x);
-		}
-
-		println();
-		sleep(1000);
+for (var i = 5; i >= 0; i--)
+{
+	for (var j = 0; j < 2; j++)
+	{
+		println("Value of j: " + j);
+		sleep(200);
 	}
-}
 
-println("Starting \"program\"...\n");
-doMagic();
+	println("\nValue of i: " + i);
+	sleep(400);
+}

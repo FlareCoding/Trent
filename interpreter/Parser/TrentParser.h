@@ -74,6 +74,7 @@ namespace trent::parser
 		NodeRef<ASTNode>			ParseOperator(TokenRef<ASTExpressionNode> lhs);
 
 		NodeRef<ASTNode>			ParseWhileLoop();
+		NodeRef<ASTNode>			ParseForLoop();
 
 	private:
 		// Contains all the tokens

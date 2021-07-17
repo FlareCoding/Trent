@@ -82,6 +82,12 @@ namespace trent
 			);
 			break;
 		}
+		case ASTNodeType::ForLoop: {
+			EvaluateForLoopNode(
+				std::reinterpret_pointer_cast<ASTForLoopNode>(node)
+			);
+			break;
+		}
 		default: {
 			break;
 		}
@@ -152,8 +158,17 @@ namespace trent
 
 	void TrentInterpreter::RegisterVariable(const std::string& name, TrentObject* obj)
 	{
-		auto& variable_stack = GetCurrentVariableStack();
-		variable_stack[name] = obj;
+		if (!GetRegisteredVariable(name))
+		{
+			auto& variable_stack = GetCurrentVariableStack();
+			variable_stack[name] = obj;
+		}
+		else
+		{
+			std::string ex_message = "Variable '" + name + "' already exists";
+			auto exception = TrentException("RuntimeException", ex_message, "RegisterVariable");
+			exception.Raise();
+		}
 	}
 
 	TrentObject* TrentInterpreter::EvaluateVariableDeclarationNode(NodeRef<ASTVariableDeclarationNode> node)
@@ -163,19 +178,7 @@ namespace trent
 
 		TrentObject* value = EvaluateExpressionNode(node->d_value);
 		
-		auto& variable_stack = GetCurrentVariableStack();
-		
-		// Throw an exception if variable already exists,
-		// otherwise register the new variable.
-		if (variable_stack.find(node->d_variable_name) != variable_stack.end())
-		{
-			std::string ex_message = "Variable '" + node->d_variable_name + "' already exists";
-			auto exception = TrentException("RuntimeException", ex_message, "VariableDeclarationError");
-			exception.Raise();
-			return TrentObject_Null;
-		}
-
-		variable_stack[node->d_variable_name] = value;
+		RegisterVariable(node->d_variable_name, value);
 		return value;
 	}
 
@@ -475,6 +478,50 @@ namespace trent
 
 			condition_object = EvaluateExpressionNode(node->d_condition);
 		}
+
+		return TrentObject_Null;
+	}
+
+	TrentObject* TrentInterpreter::EvaluateForLoopNode(NodeRef<ASTForLoopNode> node)
+	{
+		// Tracking the current line of code.
+		d_current_lineno = node->d_lineno;
+
+		// Create a new variable stack for the initializer
+		PushVariableStack();
+
+		// Run the initializer
+		InterpretNode(node->d_initializer);
+
+		auto condition_object = EvaluateExpressionNode(node->d_condition);
+		if (strcmp(condition_object->GetRuntimeName(), "Boolean") != 0)
+		{
+			auto exception = TrentException("RuntimeException", "condition expression must be a boolean", "EvaluateWhileLoopNode");
+			exception.Raise();
+			return TrentObject_Null;
+		}
+
+		while (reinterpret_cast<TrentBoolean*>(condition_object)->GetValue())
+		{
+			// Create new variable stack for the loop's body
+			PushVariableStack();
+
+			// Execute body statements
+			for (auto& body_node : node->d_body)
+				InterpretNode(body_node);
+
+			// Pop the body's variable stack
+			PopVariableStack();
+
+			// Run the increment
+			InterpretNode(node->d_increment);
+
+			// Re-evaluate the condition
+			condition_object = EvaluateExpressionNode(node->d_condition);
+		}
+
+		// Pop the variable stack created for the initializer
+		PopVariableStack();
 
 		return TrentObject_Null;
 	}

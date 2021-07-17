@@ -43,6 +43,7 @@ namespace trent
 		TrentObject* EvaluateBooleanOperatorNode(NodeRef<ASTBooleanOperatorNode> node);
 
 		TrentObject* EvaluateWhileLoopNode(NodeRef<ASTWhileLoopNode> node);
+		TrentObject* EvaluateForLoopNode(NodeRef<ASTForLoopNode> node);
 
 		TrentObject* EvaluateVariableDeclarationNode(NodeRef<ASTVariableDeclarationNode> node);
 		TrentObject* EvaluateVariableNode(NodeRef<ASTVariableNode> node);

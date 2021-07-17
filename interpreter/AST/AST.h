@@ -10,6 +10,7 @@
 #include "ASTFunctionDeclarationNode.h"
 #include "ASTAssignmentNode.h"
 #include "ASTWhileLoopNode.h"
+#include "ASTForLoopNode.h"
 
 namespace trent
 {

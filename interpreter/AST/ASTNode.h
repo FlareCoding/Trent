@@ -21,7 +21,8 @@ namespace trent
 		BinaryOperator,
 		BooleanOperator,
 		Assignment,
-		WhileLoop
+		WhileLoop,
+		ForLoop
 	};
 
 	class ASTNode
