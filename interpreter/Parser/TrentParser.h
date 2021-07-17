@@ -12,14 +12,14 @@ namespace trent::parser
 		TrentParser() = default;
 
 		// Initializes the patterns and other parser resources.
-		void Initialize(const std::string& source);
+		void Initialize(std::string& source);
 
 		// Constructs an Abstract Syntax Tree of nodes required by the interpreter.
 		std::shared_ptr<AST> ConstructAST();
 
 	private:
 		// Populated the token pool with tokens.
-		void InitializeTokenPool(const std::string& source);
+		void InitializeTokenPool(std::string& source);
 
 		// Advances the current token to the next one if the current token is a
 		// SymbolToken and has the given symbol.

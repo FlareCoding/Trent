@@ -29,7 +29,7 @@ namespace trent
 		d_registered_functions[name] = fn;
 	}
 
-	void TrentInterpreter::Interpret(const std::string& source)
+	void TrentInterpreter::Interpret(std::string& source)
 	{
 		parser::TrentParser parser;
 		parser.Initialize(source);

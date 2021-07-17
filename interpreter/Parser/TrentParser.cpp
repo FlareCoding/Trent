@@ -36,14 +36,14 @@ namespace trent::parser
 		}
 	}
 
-	void TrentParser::Initialize(const std::string& source)
+	void TrentParser::Initialize(std::string& source)
 	{
 		InitializeTokenPool(source);
 
 		d_current_token = d_token_pool->Next(nullptr);
 	}
 
-	void TrentParser::InitializeTokenPool(const std::string& source)
+	void TrentParser::InitializeTokenPool(std::string& source)
 	{
 		lexer::TrentLexer lexer;
 		d_token_pool = lexer.ConstructTokenPool(source);

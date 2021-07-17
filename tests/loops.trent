@@ -1,8 +1,15 @@
 
 func test_fn()
 {
+	// This is a single line comment
 	for (var i = 0; i < 5; i++)
 	{
+		/*
+			Multiline
+			Comment
+		*/
+		// Another single line comment
+
 		while (true)
 		{
 			println("inside the while loop");

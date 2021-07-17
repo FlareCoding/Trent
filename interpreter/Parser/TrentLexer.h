@@ -9,7 +9,7 @@ namespace trent::parser::lexer
 		TrentLexer() = default;
 		~TrentLexer() = default;
 
-		std::shared_ptr<TokenPool> ConstructTokenPool(const std::string& source);
+		std::shared_ptr<TokenPool> ConstructTokenPool(std::string& source);
 
 	private:
 		void ParseLine(const std::string& line, size_t lineno);

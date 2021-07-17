@@ -6,6 +6,21 @@
 
 namespace trent::parser::lexer
 {
+	void RemoveMultilineComments(std::string& str)
+	{
+		auto start_idx = str.find("/*");
+		auto end_idx = str.find("*/");
+
+		while (start_idx != std::string::npos &&
+			end_idx != std::string::npos)
+		{
+			str.erase(start_idx, end_idx - start_idx + 2);
+
+			start_idx = str.find("/*");
+			end_idx = str.find("*/");
+		}
+	}
+
 	std::vector<std::string> RemoveNewLines(const std::string& str)
 	{
 		std::vector<std::string> strings;
@@ -82,10 +97,13 @@ namespace trent::parser::lexer
 		return (container.find(str) != container.end());
 	}
 
-	std::shared_ptr<TokenPool> TrentLexer::ConstructTokenPool(const std::string& source)
+	std::shared_ptr<TokenPool> TrentLexer::ConstructTokenPool(std::string& source)
 	{
 		d_token_pool = std::make_shared<TokenPool>();
 		
+		// Pre-filtering and removing multiline comments
+		RemoveMultilineComments(source);
+
 		auto lines = RemoveNewLines(source);
 		size_t lineno = 1;
 		for (auto& line : lines)
@@ -102,6 +120,11 @@ namespace trent::parser::lexer
 
 	void TrentLexer::ParseLine(const std::string& line, size_t lineno)
 	{
+		std::string line_copy = line;
+		Trim(line_copy);
+		if (line_copy.find("//") == 0) // Line is a comment
+			return;
+
 		auto unescaped_line = Unescape(line);
 
 		unsigned counter = 0;

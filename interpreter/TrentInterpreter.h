@@ -23,7 +23,7 @@ namespace trent
 		void InitializeEnvironment();
 
 		void RegisterFunction(const std::string& name, TrentObject::member_fn_t fn);
-		void Interpret(const std::string& source);
+		void Interpret(std::string& source);
 
 		void ExceptionObserver(TrentException* e);
 
