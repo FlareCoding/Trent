@@ -36,6 +36,36 @@ namespace trent::parser::lexer
 		return LTrim(RTrim(s, t), t);
 	}
 
+	std::string Unescape(const std::string& str)
+	{
+		std::string res;
+		std::string::const_iterator it = str.begin();
+		while (it != str.end())
+		{
+			char c = *it++;
+			if (c == '\\' && it != str.end())
+			{
+				switch (*it++) {
+				case '\\': c = '\\'; break;
+				case 'n': c = '\n'; break;
+				case 't': c = '\t'; break;
+				case 'r': c = '\r'; break;
+				case 'a': c = '\a'; break;
+				case 'b': c = '\b'; break;
+				case 'v': c = '\v'; break;
+				case '"': c = '\f'; break;
+					// The \" is being converted to form feed escape sequence
+					// to later be added to the string as a valid quote.
+				default:
+					continue;
+				}
+			}
+			res += c;
+		}
+
+		return res;
+	}
+
 	bool IsInteger(const std::string& str)
 	{
 		return std::all_of(str.begin(), str.end(), ::isdigit);
@@ -72,9 +102,11 @@ namespace trent::parser::lexer
 
 	void TrentLexer::ParseLine(const std::string& line, size_t lineno)
 	{
+		auto unescaped_line = Unescape(line);
+
 		unsigned counter = 0;
 		std::string segment;
-		std::stringstream stream_input(line);
+		std::stringstream stream_input(unescaped_line);
 		while (std::getline(stream_input, segment, '\"'))
 		{
 			++counter;
@@ -82,6 +114,10 @@ namespace trent::parser::lexer
 			{
 				if (!segment.empty())
 				{
+					// Replacing the previously fixed form-feed escape sequences
+					// with quotes.
+					std::replace(segment.begin(), segment.end(), '\f', '\"');
+
 					auto token = MakeToken<LiteralValueToken>(LiteralType::String, segment);
 					token->d_lineno = lineno;
 					d_token_pool->Add(token);

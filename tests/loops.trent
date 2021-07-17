@@ -13,5 +13,5 @@ func doMagic() {
 	}
 }
 
-println("Starting program...\n");
+println("Starting \"program\"...\n");
 doMagic();
