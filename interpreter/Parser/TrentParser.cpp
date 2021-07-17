@@ -327,6 +327,16 @@ namespace trent::parser
 		return return_statement_node;
 	}
 
+	NodeRef<ASTNode> TrentParser::ParseBreakStatement()
+	{
+		Expect(Keyword::Break);
+
+		auto break_statement_node = MakeNode<ASTBreakStatementNode>();
+		break_statement_node->d_lineno = d_current_token->d_lineno;
+
+		return break_statement_node;
+	}
+
 	NodeRef<ASTNode> TrentParser::ParseFunctionCall()
 	{
 		auto function_call_node = MakeNode<ASTFunctionCallNode>();
@@ -645,6 +655,9 @@ namespace trent::parser
 		case Keyword::Return: {
 			return ParseReturnStatement();
 		}
+		case Keyword::Break: {
+			return ParseBreakStatement();
+		}
 		case Keyword::While: {
 			return ParseWhileLoop();
 		}
@@ -728,7 +741,7 @@ namespace trent::parser
 
 		while (IsSymbol(d_current_token, Symbol::Semicolon) || IsSymbol(d_current_token, Symbol::BraceClose))
 		{
-			if (CurrentToken<SymbolToken>()->d_symbol == Symbol::Semicolon)
+			if (IsSymbol(d_current_token, Symbol::Semicolon))
 				Expect(Symbol::Semicolon);
 			else
 				Expect(Symbol::BraceClose);
@@ -779,7 +792,7 @@ namespace trent::parser
 
 		while (IsSymbol(d_current_token, Symbol::Semicolon) || IsSymbol(d_current_token, Symbol::BraceClose))
 		{
-			if (CurrentToken<SymbolToken>()->d_symbol == Symbol::Semicolon)
+			if (IsSymbol(d_current_token, Symbol::Semicolon))
 				Expect(Symbol::Semicolon);
 			else
 				Expect(Symbol::BraceClose);

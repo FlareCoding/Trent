@@ -55,6 +55,7 @@ namespace trent::parser
 		NodeRef<ASTNode>			ParseStatement();
 		NodeRef<ASTExpressionNode>	ParseExpression();
 		NodeRef<ASTNode>			ParseReturnStatement();
+		NodeRef<ASTNode>			ParseBreakStatement();
 
 		NodeRef<ASTNode>			ParseFunctionDeclaration();
 		NodeRef<ASTNode>			ParseFunctionCall();

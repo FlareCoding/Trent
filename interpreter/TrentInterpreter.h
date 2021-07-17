@@ -4,6 +4,16 @@
 
 namespace trent
 {
+	using VariableStack_t = std::unordered_map<std::string, TrentObject*>;
+
+	struct FunctionFrame
+	{
+		std::string name = "Anonymous";
+		bool		return_state = false;
+
+		std::vector<VariableStack_t> d_variable_stacks;
+	};
+
 	class TrentInterpreter
 	{
 	public:
@@ -24,10 +34,6 @@ namespace trent
 		std::unordered_map<std::string, TrentObject::member_fn_t> d_registered_functions;
 		TrentObject::member_fn_t GetRegisteredFunction(const std::string& name);
 
-		using VariableStack_t = std::unordered_map<std::string, TrentObject*>;
-
-		std::vector<VariableStack_t> d_variable_stacks;
-
 		VariableStack_t& GetCurrentVariableStack();
 		void PushVariableStack();
 		void PopVariableStack();
@@ -37,11 +43,20 @@ namespace trent
 		void UpdateRegisteredVariable(const std::string& name, TrentObject* obj);
 
 	private:
-		std::vector<std::pair<std::string, bool>> d_function_call_stack;
+		// For tracking which function needs to return
+		std::vector<FunctionFrame> d_function_call_stack;
 		void PushFunctionFrame(const std::string& name);
 		void PopFunctionFrame();
 		bool DoesFunctionNeedReturning();
 		void SetFunctionReturnState();
+		FunctionFrame& GetCurrentFunctionFrame();
+
+		// For tracking which loop needs to be broken out of
+		std::vector<bool> d_loop_break_stack;
+		void PushLoopFrame();
+		void PopLoopFrame();
+		bool DoesLoopNeedBreaking();
+		void SetLoopBreakState();
 
 	private:
 		TrentObject* EvaluateLiteralValueNode(NodeRef<ASTLiteralValueNode> node);
@@ -53,6 +68,7 @@ namespace trent
 		TrentObject* EvaluateForLoopNode(NodeRef<ASTForLoopNode> node);
 
 		TrentObject* EvaluateReturnStatementNode(NodeRef<ASTReturnStatementNode> node);
+		TrentObject* EvaluateBreakStatementNode(NodeRef<ASTBreakStatementNode> node);
 
 		TrentObject* EvaluateVariableDeclarationNode(NodeRef<ASTVariableDeclarationNode> node);
 		TrentObject* EvaluateVariableNode(NodeRef<ASTVariableNode> node);

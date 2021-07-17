@@ -23,7 +23,8 @@ namespace trent
 		Assignment,
 		WhileLoop,
 		ForLoop,
-		ReturnStatement
+		ReturnStatement,
+		BreakStatement
 	};
 
 	class ASTNode

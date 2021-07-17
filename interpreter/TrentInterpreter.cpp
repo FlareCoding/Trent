@@ -12,9 +12,11 @@ namespace trent
 			this->ExceptionObserver(e);
 		});
 
-		// Initialize the global program-wide variable stack
-		VariableStack_t program_stack;
-		d_variable_stacks.push_back(program_stack);
+		// Initialize the global program-wide frame with a variable stack
+		PushFunctionFrame("$trent_$global_$main$");
+
+		// Push function-frame-wide variable stack for the whole program
+		PushVariableStack();
 	}
 
 	TrentInterpreter::~TrentInterpreter()
@@ -90,6 +92,12 @@ namespace trent
 				std::reinterpret_pointer_cast<ASTReturnStatementNode>(node)
 			);
 		}
+		case ASTNodeType::BreakStatement: {
+			EvaluateBreakStatementNode(
+				std::reinterpret_pointer_cast<ASTBreakStatementNode>(node)
+			);
+			break;
+		}
 		default: {
 			break;
 		}
@@ -100,7 +108,9 @@ namespace trent
 
 	void TrentInterpreter::ExceptionObserver(TrentException* e)
 	{
-		printf("Interpreter encountered a TrentException (Line %zi)\n", d_current_lineno);
+		auto& current_frame = GetCurrentFunctionFrame();
+
+		printf("Interpreter encountered a TrentException:\n\tFunction: %s\n\t(Line %zi)\n", current_frame.name.c_str(), d_current_lineno);
 		printf("%s\n", e->ToString().c_str());
 		TrentRuntime::Shutdown();
 		exit(1);
@@ -116,52 +126,97 @@ namespace trent
 
 	void TrentInterpreter::PushFunctionFrame(const std::string& name)
 	{
-		d_function_call_stack.push_back({ name, false });
+		FunctionFrame frame;
+		frame.name = name;
+		frame.return_state = false;
+
+		d_function_call_stack.push_back(frame);
+
+		// Create the default frame-wide variable stack
+		PushVariableStack();
 	}
 
 	void TrentInterpreter::PopFunctionFrame()
 	{
 		// The global program-wide frame should never be popped
-		if (d_function_call_stack.size())
+		if (d_function_call_stack.size() > 1)
 			d_function_call_stack.pop_back();
 	}
 
 	bool TrentInterpreter::DoesFunctionNeedReturning()
 	{
-		if (d_function_call_stack.size() == 0)
+		if (d_function_call_stack.size() < 2)
 			return false;
 
-		return d_function_call_stack[d_function_call_stack.size() - 1].second;
+		return d_function_call_stack[d_function_call_stack.size() - 1].return_state;
 	}
 
 	void TrentInterpreter::SetFunctionReturnState()
 	{
-		if (d_function_call_stack.size())
-			d_function_call_stack[d_function_call_stack.size() - 1].second = true;
+		if (d_function_call_stack.size() > 1)
+			d_function_call_stack[d_function_call_stack.size() - 1].return_state = true;
 	}
 
-	TrentInterpreter::VariableStack_t& TrentInterpreter::GetCurrentVariableStack()
+	FunctionFrame& TrentInterpreter::GetCurrentFunctionFrame()
 	{
-		return d_variable_stacks[d_variable_stacks.size() - 1];
+		return d_function_call_stack[d_function_call_stack.size() - 1];
+	}
+
+	void TrentInterpreter::PushLoopFrame()
+	{
+		d_loop_break_stack.push_back({ false });
+	}
+
+	void TrentInterpreter::PopLoopFrame()
+	{
+		if (d_loop_break_stack.size())
+			d_loop_break_stack.pop_back();
+	}
+
+	bool TrentInterpreter::DoesLoopNeedBreaking()
+	{
+		if (d_loop_break_stack.size() == 0)
+			return false;
+
+		return d_loop_break_stack[d_loop_break_stack.size() - 1];
+	}
+
+	void TrentInterpreter::SetLoopBreakState()
+	{
+		if (d_loop_break_stack.size())
+			d_loop_break_stack[d_loop_break_stack.size() - 1] = true;
+	}
+
+	VariableStack_t& TrentInterpreter::GetCurrentVariableStack()
+	{
+		auto& current_frame = GetCurrentFunctionFrame();
+
+		return current_frame.d_variable_stacks[current_frame.d_variable_stacks.size() - 1];
 	}
 
 	void TrentInterpreter::PushVariableStack()
 	{
+		auto& current_frame = GetCurrentFunctionFrame();
+
 		VariableStack_t new_stack;
-		d_variable_stacks.push_back(new_stack);
+		current_frame.d_variable_stacks.push_back(new_stack);
 	}
 
 	void TrentInterpreter::PopVariableStack()
 	{
-		if (d_variable_stacks.size() > 1)
-			d_variable_stacks.pop_back();
+		auto& current_frame = GetCurrentFunctionFrame();
+
+		if (current_frame.d_variable_stacks.size() > 1)
+			current_frame.d_variable_stacks.pop_back();
 	}
 
 	TrentObject* TrentInterpreter::GetRegisteredVariable(const std::string& name)
 	{
+		auto& current_frame = GetCurrentFunctionFrame();
+
 		// Iterating over variable stacks backwards
-		for (std::vector<VariableStack_t>::reverse_iterator it = d_variable_stacks.rbegin(); 
-			it != d_variable_stacks.rend(); ++it)
+		for (std::vector<VariableStack_t>::reverse_iterator it = current_frame.d_variable_stacks.rbegin();
+			it != current_frame.d_variable_stacks.rend(); ++it)
 		{
 			auto& stack = *it;
 			if (stack.find(name) != stack.end())
@@ -173,9 +228,11 @@ namespace trent
 
 	void TrentInterpreter::UpdateRegisteredVariable(const std::string& name, TrentObject* obj)
 	{
+		auto& current_frame = GetCurrentFunctionFrame();
+
 		// Iterating over variable stacks backwards
-		for (std::vector<VariableStack_t>::reverse_iterator it = d_variable_stacks.rbegin();
-			it != d_variable_stacks.rend(); ++it)
+		for (std::vector<VariableStack_t>::reverse_iterator it = current_frame.d_variable_stacks.rbegin();
+			it != current_frame.d_variable_stacks.rend(); ++it)
 		{
 			auto& stack = *it;
 			if (stack.find(name) != stack.end())
@@ -494,6 +551,9 @@ namespace trent
 		// Tracking the current line of code.
 		d_current_lineno = node->d_lineno;
 
+		// Register loop on the break stack
+		PushLoopFrame();
+
 		auto condition_object = EvaluateExpressionNode(node->d_condition);
 		if (strcmp(condition_object->GetRuntimeName(), "Boolean") != 0)
 		{
@@ -514,13 +574,26 @@ namespace trent
 				// Check if current function needs returning
 				if (DoesFunctionNeedReturning())
 					return interpreted_result;
+
+				// Check if loop needs to be broken out of
+				if (DoesLoopNeedBreaking())
+					break;
 			}
 
 			// Pop the variable stack
 			PopVariableStack();
 
+			// Check if loop needs to be broken out of
+			// (needs to be done again to prevent condition loop
+			// from being checked again (this local C++ code).
+			if (DoesLoopNeedBreaking())
+				break;
+
 			condition_object = EvaluateExpressionNode(node->d_condition);
 		}
+
+		// Remove loop from the break stack
+		PopLoopFrame();
 
 		return TrentObject_Null;
 	}
@@ -529,6 +602,9 @@ namespace trent
 	{
 		// Tracking the current line of code.
 		d_current_lineno = node->d_lineno;
+
+		// Register loop on the break stack
+		PushLoopFrame();
 
 		// Create a new variable stack for the initializer
 		PushVariableStack();
@@ -557,10 +633,20 @@ namespace trent
 				// Check if current function needs returning
 				if (DoesFunctionNeedReturning())
 					return interpreted_result;
+
+				// Check if loop needs to be broken out of
+				if (DoesLoopNeedBreaking())
+					break;
 			}
 
 			// Pop the body's variable stack
 			PopVariableStack();
+
+			// Check if loop needs to be broken out of
+			// (needs to be done again to prevent condition loop
+			// from being checked again (this local C++ code).
+			if (DoesLoopNeedBreaking())
+				break;
 
 			// Run the increment
 			InterpretNode(node->d_increment);
@@ -572,6 +658,9 @@ namespace trent
 		// Pop the variable stack created for the initializer
 		PopVariableStack();
 
+		// Remove loop from the break stack
+		PopLoopFrame();
+
 		return TrentObject_Null;
 	}
 
@@ -579,6 +668,12 @@ namespace trent
 	{
 		SetFunctionReturnState();
 		return EvaluateExpressionNode(node->d_return_value);
+	}
+
+	TrentObject* TrentInterpreter::EvaluateBreakStatementNode(NodeRef<ASTBreakStatementNode> node)
+	{
+		SetLoopBreakState();
+		return TrentObject_Null;
 	}
 
 	TrentObject* TrentInterpreter::EvaluateLiteralValueNode(NodeRef<ASTLiteralValueNode> node)

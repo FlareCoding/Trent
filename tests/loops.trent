@@ -1,36 +1,31 @@
 func test_fn()
 {
-	for (var i = 0; i < 4; i++)
+	for (var i = 0; i < 5; i++)
 	{
 		while (true)
 		{
-			println("before return");
-			return 3;
+			println("inside the while loop");
+			break;
 		}
 
-		return 2;
+		println("i: " + i);
+		println();
+		break;
 	}
-
-	return 1;
-
-	println("after return statement");
 }
 
 func foo()
 {
-	println("foo executing...");
-	return test_fn();
-	println("foo after return statement??");
+	for (var i = 0; i < 10; i++) {
+		test_fn();
+		println();
+		break;
+	}
+
+	return "foo executed";
 }
 
-func bar()
-{
-	println("bar executing...");
-	return foo();
-	println("bar after return??");
-}
-
-var result = bar();
+var result = foo();
 
 print("Result: ");
 println(result);
