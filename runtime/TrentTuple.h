@@ -1,5 +1,6 @@
 #pragma once
 #include "TrentObject.h"
+#include <vector>
 #include <initializer_list>
 
 namespace trent

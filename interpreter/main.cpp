@@ -18,9 +18,11 @@ int main(int argc, char** argv)
 		std::stringstream sstream;
 		sstream << input_stream.rdbuf();
 
+		std::string source = sstream.str();
+
 		auto interpreter = std::make_unique<TrentInterpreter>();
 		interpreter->InitializeEnvironment();
-		interpreter->Interpret(sstream.str());
+		interpreter->Interpret(source);
 	}
 	else
 	{

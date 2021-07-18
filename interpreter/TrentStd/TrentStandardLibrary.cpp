@@ -111,7 +111,7 @@ namespace trent
 	TrentObject* TrentStandardLibrary::__TrentStdSleep(TrentObject* args)
 	{
 		int time = -1;
-		char* time_unit = "ms";
+		char* time_unit = (char*)"ms";
 		if (!TrentArg_Parse(args, "is", &time, &time_unit))
 		{
 			auto exception = TrentException("TrentStandardLibrary", "Failed to parse arguments", "__TrentStdSleep::Error");

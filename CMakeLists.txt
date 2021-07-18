@@ -6,6 +6,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if (APPLE)
+    set(CMAKE_MACOSX_RPATH OFF)
+endif()
+
 add_definitions(-DUNICODE -D_UNICODE)
 
 project(Trent)
