@@ -1,0 +1,73 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Trent",
+	"patterns": [
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#numeric_literals"
+		},
+		{
+			"include": "#comments"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [{
+				"name": "keyword.control.trentlang",
+				"match": "\\b(if|elseif|else|while|for|return|break|var|func)\\b"
+			}]
+		},
+		"strings": {
+			"name": "string.quoted.double.trentlang",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.trentlang",
+					"match": "\\\\."
+				}
+			]
+		},
+		"numeric_literals": {
+			"patterns": [{
+				"name": "constant.numeric.trentlang",
+				"match": "(?<!\\w)\\.?\\d(?:(?:[0-9a-zA-Z_\\.])|(?<=[eEpP])[+-])*"
+			}]
+		},
+		"comments": {
+			"patterns": [
+				{
+					"name": "comment.block.trentlang",
+					"begin": "(\\/\\*)",
+					"beginCaptures": {
+						"1": {
+							"name": "punctuation.definition.comment.trentlang"
+						}
+					},
+					"end": "(\\*\\/)",
+					"endCaptures": {
+						"1": {
+							"name": "punctuation.definition.comment.trentlang"
+						}
+					}
+				},
+				{
+					"name": "comment.line.double-slash.trentlang",
+					"begin": "(\\/\\/)",
+					"beginCaptures": {
+						"1": {
+							"name": "punctuation.definition.comment.trentlang"
+						}
+					},
+					"end": "(?:\\n|$)"
+				}
+			]
+		}
+	},
+	"scopeName": "source.trent"
+}
