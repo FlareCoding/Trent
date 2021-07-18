@@ -37,6 +37,6 @@ namespace trent::parser
 	template <typename T, typename... Args>
 	constexpr TokenRef<T> As(Args&&... args)
 	{
-		return std::reinterpret_pointer_cast<T>(std::forward<Args>(args)...);
+		return std::static_pointer_cast<T>(std::forward<Args>(args)...);
 	}
 }

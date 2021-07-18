@@ -54,51 +54,51 @@ namespace trent
 		{
 		case ASTNodeType::VariableDeclaration: {
 			EvaluateVariableDeclarationNode(
-				std::reinterpret_pointer_cast<ASTVariableDeclarationNode>(node)
+				std::static_pointer_cast<ASTVariableDeclarationNode>(node)
 			);
 			break;
 		}
 		case ASTNodeType::FunctionCall: {
 			return EvaluateFunctionCallNode(
-				std::reinterpret_pointer_cast<ASTFunctionCallNode>(node)
+				std::static_pointer_cast<ASTFunctionCallNode>(node)
 			);
 		}
 		case ASTNodeType::Assignment: {
 			EvaluateAssignmentNode(
-				std::reinterpret_pointer_cast<ASTAssignmentNode>(node)
+				std::static_pointer_cast<ASTAssignmentNode>(node)
 			);
 			break;
 		}
 		case ASTNodeType::Expression: {
 			EvaluateExpressionNode(
-				std::reinterpret_pointer_cast<ASTExpressionNode>(node)
+				std::static_pointer_cast<ASTExpressionNode>(node)
 			);
 			break;
 		}
 		case ASTNodeType::WhileLoop: {
 			return EvaluateWhileLoopNode(
-				std::reinterpret_pointer_cast<ASTWhileLoopNode>(node)
+				std::static_pointer_cast<ASTWhileLoopNode>(node)
 			);
 		}
 		case ASTNodeType::ForLoop: {
 			return EvaluateForLoopNode(
-				std::reinterpret_pointer_cast<ASTForLoopNode>(node)
+				std::static_pointer_cast<ASTForLoopNode>(node)
 			);
 		}
 		case ASTNodeType::ReturnStatement: {
 			return EvaluateReturnStatementNode(
-				std::reinterpret_pointer_cast<ASTReturnStatementNode>(node)
+				std::static_pointer_cast<ASTReturnStatementNode>(node)
 			);
 		}
 		case ASTNodeType::BreakStatement: {
 			EvaluateBreakStatementNode(
-				std::reinterpret_pointer_cast<ASTBreakStatementNode>(node)
+				std::static_pointer_cast<ASTBreakStatementNode>(node)
 			);
 			break;
 		}
 		case ASTNodeType::IfElseStatement: {
 			return EvaluateIfElseStatementNode(
-				std::reinterpret_pointer_cast<ASTIfElseStatementNode>(node)
+				std::static_pointer_cast<ASTIfElseStatementNode>(node)
 			);
 		}
 		default: {
@@ -434,32 +434,32 @@ namespace trent
 		{
 		case ASTNodeType::Expression: {
 			return EvaluateExpressionNode(
-				std::reinterpret_pointer_cast<ASTExpressionNode>(node->d_value)
+				std::static_pointer_cast<ASTExpressionNode>(node->d_value)
 			);
 		}
 		case ASTNodeType::FunctionCall: {
 			return EvaluateFunctionCallNode(
-				std::reinterpret_pointer_cast<ASTFunctionCallNode>(node->d_value)
+				std::static_pointer_cast<ASTFunctionCallNode>(node->d_value)
 			);
 		}
 		case ASTNodeType::LiteralValue: {
 			return EvaluateLiteralValueNode(
-				std::reinterpret_pointer_cast<ASTLiteralValueNode>(node->d_value)
+				std::static_pointer_cast<ASTLiteralValueNode>(node->d_value)
 			);
 		}
 		case ASTNodeType::Variable: {
 			return EvaluateVariableNode(
-				std::reinterpret_pointer_cast<ASTVariableNode>(node->d_value)
+				std::static_pointer_cast<ASTVariableNode>(node->d_value)
 			);
 		}
 		case ASTNodeType::BinaryOperator: {
 			return EvaluateBinaryOperatorNode(
-				std::reinterpret_pointer_cast<ASTBinaryOperatorNode>(node->d_value)
+				std::static_pointer_cast<ASTBinaryOperatorNode>(node->d_value)
 			);
 		}
 		case ASTNodeType::BooleanOperator: {
 			return EvaluateBooleanOperatorNode(
-				std::reinterpret_pointer_cast<ASTBooleanOperatorNode>(node->d_value)
+				std::static_pointer_cast<ASTBooleanOperatorNode>(node->d_value)
 			);
 		}
 		default: {
