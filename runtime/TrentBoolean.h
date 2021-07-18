@@ -12,6 +12,8 @@ namespace trent
 
 		TRAPI inline bool GetValue() const { return d_value; }
 
+		TRAPI virtual void CopyFrom(TrentObject* other) override;
+
 		// Equal to boolean operator
 		TRAPI virtual TrentObject* __operator_equequ(TrentObject* obj) override;
 

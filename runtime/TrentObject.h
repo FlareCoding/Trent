@@ -30,6 +30,8 @@ namespace trent
 		TRAPI virtual const char* ToString();
 		TRAPI const char* GetInstanceDescription();
 
+		TRAPI virtual void CopyFrom(TrentObject* other);
+
 		/*
 		*	Binary Operators
 		*/

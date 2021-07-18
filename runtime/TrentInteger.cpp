@@ -19,6 +19,18 @@ namespace trent
 	{
 		return "Int";
 	}
+
+	void TrentInteger::CopyFrom(TrentObject* other)
+	{
+		if (strcmp(other->GetRuntimeName(), "Int") != 0)
+		{
+			auto exception = TrentException("TrentInteger", "Cannot copy object buffer", "CopyObject::Error");
+			exception.Raise();
+			return;
+		}
+
+		this->d_value = reinterpret_cast<TrentInteger*>(other)->d_value;
+	}
 	
 	TrentObject* TrentInteger::__operator_add(TrentObject* obj)
 	{

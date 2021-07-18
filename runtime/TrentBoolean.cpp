@@ -19,6 +19,18 @@ namespace trent
 		return "Boolean";
 	}
 	
+	void TrentBoolean::CopyFrom(TrentObject* other)
+	{
+		if (strcmp(other->GetRuntimeName(), "Boolean") != 0)
+		{
+			auto exception = TrentException("TrentBoolean", "Cannot copy object buffer", "CopyObject::Error");
+			exception.Raise();
+			return;
+		}
+
+		this->d_value = reinterpret_cast<TrentBoolean*>(other)->d_value;
+	}
+
 	TrentObject* TrentBoolean::__operator_equequ(TrentObject* obj)
 	{
 		if (strcmp(obj->GetRuntimeName(), "Boolean") != 0)

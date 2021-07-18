@@ -12,6 +12,8 @@ namespace trent
 		TRAPI const char* ToString() override;
 		TRAPI const char* GetRuntimeName() override;
 
+		TRAPI virtual void CopyFrom(TrentObject* other) override;
+
 		TRAPI TrentObject* __NativeGetItem(size_t idx) const { return d_contents[idx]; }
 		TRAPI size_t __NativeGetItemCount() const { return d_contents.size(); }
 

@@ -36,4 +36,6 @@ add_custom_target(Tests
     SOURCES
         tests/main.trent
         tests/loops.trent
+        tests/mem_test.trent
+        tests/fibb.trent
 )

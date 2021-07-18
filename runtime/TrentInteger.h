@@ -12,6 +12,8 @@ namespace trent
 
 		TRAPI inline int GetValue() const { return d_value; }
 
+		TRAPI virtual void CopyFrom(TrentObject* other) override;
+		
 		TRAPI virtual TrentObject* __operator_add(TrentObject* obj) override;
 		TRAPI virtual TrentObject* __operator_sub(TrentObject* obj) override;
 		TRAPI virtual TrentObject* __operator_mul(TrentObject* obj) override;

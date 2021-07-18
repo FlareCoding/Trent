@@ -1,0 +1,15 @@
+
+func mod(str) {
+	str = "Modified";
+}
+
+func main()
+{
+	var str = "Hello World!";
+
+	println("[BEFORE] str: " + str);
+	mod(str);
+	println("[AFTER]  str: " + str);
+}
+
+main();

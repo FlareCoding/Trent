@@ -209,6 +209,14 @@ namespace trent::parser
 			}
 
 			expression_node->d_value = ParseIdentifier();
+
+			if (d_current_token->d_type == TokenType::Operator)
+			{
+				auto lhs = MakeNode<ASTExpressionNode>();
+				lhs->d_value = expression_node->d_value;
+
+				expression_node->d_value = ParseOperator(lhs);
+			}
 			break;
 		}
 		case TokenType::LiteralValue: {
@@ -856,6 +864,9 @@ namespace trent::parser
 			}
 		}
 
+		if (!NextToken())
+			return if_else_node;
+
 		// If the else if statement exists
 		while (IsKeyword(NextToken(), Keyword::Elif))
 		{
@@ -902,6 +913,9 @@ namespace trent::parser
 			// Add the elif statement binding
 			if_else_node->d_else_if_statements.push_back(binding);
 		}
+
+		if (!NextToken())
+			return if_else_node;
 
 		// Check if "else" statement is present
 		if (IsKeyword(NextToken(), Keyword::Else))

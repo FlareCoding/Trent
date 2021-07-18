@@ -25,6 +25,18 @@ namespace trent
 		return "String";
 	}
 
+	void TrentString::CopyFrom(TrentObject* other)
+	{
+		if (strcmp(other->GetRuntimeName(), "String") != 0)
+		{
+			auto exception = TrentException("TrentString", "Cannot copy object buffer", "CopyObject::Error");
+			exception.Raise();
+			return;
+		}
+
+		this->d_buffer = reinterpret_cast<TrentString*>(other)->d_buffer;
+	}
+
 	TrentObject* TrentString::__operator_add(TrentObject* obj)
 	{
 		if (strcmp(obj->GetRuntimeName(), "String") == 0)

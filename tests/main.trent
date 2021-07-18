@@ -9,6 +9,6 @@ func mul(x, y) {
 }
 
 var num = 2;
-var result = mul(num, 5);
+var result = mul(add(2, num), 5);
 
 println(result);

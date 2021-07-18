@@ -40,6 +40,8 @@ namespace trent
 		return this->d_instance_description.c_str();
 	}
 
+	void TrentObject::CopyFrom(TrentObject* other) {}
+
 	void TrentObject::AddSetter(const char* property, setter_fn_t fn)
 	{
 		d_property_setters[property] = fn;

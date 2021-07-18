@@ -6,6 +6,12 @@
 
 namespace trent
 {
+	struct StackFrame
+	{
+		std::vector<TrentObject*> d_objects;
+		void Free();
+	};
+
 	class TrentRuntime
 	{
 	public:
@@ -14,6 +20,13 @@ namespace trent
 
 		template <class C, typename... Args>
 		static TrentObject* AllocateObject(Args&&... args);
+
+		TRAPI static void FreeObject(TrentObject* obj);
+
+		TRAPI static void ElevateObjectToPreviousStack(TrentObject* obj);
+
+		TRAPI static void PushStackFrame();
+		TRAPI static void PopStackFrame();
 
 	public:
 		using exception_observer_fn_t = std::function<void(TrentException*)>;
@@ -25,7 +38,8 @@ namespace trent
 		TRAPI static std::vector<exception_observer_fn_t> d_exception_observers;
 
 	private:
-		TRAPI static std::vector<TrentObject*> d_object_pool;
+		TRAPI static std::vector<StackFrame> d_stack_frames;
+		TRAPI static StackFrame& GetCurrentStackFrame();
 
 		TRAPI static char* __strremove(char* str, const char* sub);
 	};
@@ -40,7 +54,7 @@ namespace trent
 		object->d_type.size = sizeof(C);
 		object->__Init();
 
-		d_object_pool.push_back(object);
+		GetCurrentStackFrame().d_objects.push_back(object);
 		return object;
 	}
 }

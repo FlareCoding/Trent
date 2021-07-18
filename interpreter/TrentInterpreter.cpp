@@ -14,13 +14,11 @@ namespace trent
 
 		// Initialize the global program-wide frame with a variable stack
 		PushFunctionFrame("$trent_$global_$main$");
-
-		// Push function-frame-wide variable stack for the whole program
-		PushVariableStack();
 	}
 
 	TrentInterpreter::~TrentInterpreter()
 	{
+		TrentRuntime::PopStackFrame(); // popping the main program-wide function frame
 		TrentRuntime::Shutdown();
 	}
 
@@ -145,7 +143,10 @@ namespace trent
 	{
 		// The global program-wide frame should never be popped
 		if (d_function_call_stack.size() > 1)
+		{
+			PopVariableStack();
 			d_function_call_stack.pop_back();
+		}
 	}
 
 	bool TrentInterpreter::DoesFunctionNeedReturning()
@@ -201,6 +202,8 @@ namespace trent
 
 	void TrentInterpreter::PushVariableStack()
 	{
+		TrentRuntime::PushStackFrame();
+
 		auto& current_frame = GetCurrentFunctionFrame();
 
 		VariableStack_t new_stack;
@@ -211,19 +214,32 @@ namespace trent
 	{
 		auto& current_frame = GetCurrentFunctionFrame();
 
-		if (current_frame.d_variable_stacks.size() > 1)
+		if (current_frame.d_variable_stacks.size() > 0)
+		{
 			current_frame.d_variable_stacks.pop_back();
+			TrentRuntime::PopStackFrame();
+		}
 	}
 
 	TrentObject* TrentInterpreter::GetRegisteredVariable(const std::string& name)
 	{
 		auto& current_frame = GetCurrentFunctionFrame();
+		auto& global_frame = d_function_call_stack[0];
 
-		// Iterating over variable stacks backwards
-		for (std::vector<VariableStack_t>::reverse_iterator it = current_frame.d_variable_stacks.rbegin();
-			it != current_frame.d_variable_stacks.rend(); ++it)
+		// Iterating over variable stacks backwards in the current frame.
+		for (std::vector<VariableStack_t>::reverse_iterator var_stack_it = current_frame.d_variable_stacks.rbegin();
+			var_stack_it != current_frame.d_variable_stacks.rend(); ++var_stack_it)
 		{
-			auto& stack = *it;
+			auto& stack = *var_stack_it;
+			if (stack.find(name) != stack.end())
+				return stack[name];
+		}
+
+		// Iterating over variable stacks backwards in the global program frame.
+		for (std::vector<VariableStack_t>::reverse_iterator var_stack_it = global_frame.d_variable_stacks.rbegin();
+			var_stack_it != global_frame.d_variable_stacks.rend(); ++var_stack_it)
+		{
+			auto& stack = *var_stack_it;
 			if (stack.find(name) != stack.end())
 				return stack[name];
 		}
@@ -234,15 +250,36 @@ namespace trent
 	void TrentInterpreter::UpdateRegisteredVariable(const std::string& name, TrentObject* obj)
 	{
 		auto& current_frame = GetCurrentFunctionFrame();
+		auto& global_frame = d_function_call_stack[0];
 
-		// Iterating over variable stacks backwards
-		for (std::vector<VariableStack_t>::reverse_iterator it = current_frame.d_variable_stacks.rbegin();
-			it != current_frame.d_variable_stacks.rend(); ++it)
+		// Iterating over variable stacks backwards in the current frame.
+		for (std::vector<VariableStack_t>::reverse_iterator var_stack_it = current_frame.d_variable_stacks.rbegin();
+			var_stack_it != current_frame.d_variable_stacks.rend(); ++var_stack_it)
 		{
-			auto& stack = *it;
+			auto& stack = *var_stack_it;
 			if (stack.find(name) != stack.end())
 			{
-				stack[name] = obj;
+				stack[name]->CopyFrom(obj);
+
+				if (obj) {
+					TrentRuntime::FreeObject(obj);
+				}
+				return;
+			}
+		}
+
+		// Iterating over variable stacks backwards in the global program frame.
+		for (std::vector<VariableStack_t>::reverse_iterator var_stack_it = global_frame.d_variable_stacks.rbegin();
+			var_stack_it != global_frame.d_variable_stacks.rend(); ++var_stack_it)
+		{
+			auto& stack = *var_stack_it;
+			if (stack.find(name) != stack.end())
+			{
+				stack[name]->CopyFrom(obj);
+
+				if (obj) {
+					TrentRuntime::FreeObject(obj);
+				}
 				return;
 			}
 		}
@@ -250,17 +287,8 @@ namespace trent
 
 	void TrentInterpreter::RegisterVariable(const std::string& name, TrentObject* obj)
 	{
-		if (!GetRegisteredVariable(name))
-		{
-			auto& variable_stack = GetCurrentVariableStack();
-			variable_stack[name] = obj;
-		}
-		else
-		{
-			std::string ex_message = "Variable '" + name + "' already exists";
-			auto exception = TrentException("RuntimeException", ex_message, "RegisterVariable");
-			exception.Raise();
-		}
+		auto& variable_stack = GetCurrentVariableStack();
+		variable_stack[name] = obj;
 	}
 
 	TrentObject* TrentInterpreter::EvaluateVariableDeclarationNode(NodeRef<ASTVariableDeclarationNode> node)
@@ -268,10 +296,20 @@ namespace trent
 		// Tracking the current line of code.
 		d_current_lineno = node->d_lineno;
 
-		TrentObject* value = EvaluateExpressionNode(node->d_value);
+		if (!GetRegisteredVariable(node->d_variable_name))
+		{
+			TrentObject* value = EvaluateExpressionNode(node->d_value);
+			RegisterVariable(node->d_variable_name, value);
+			return value;
+		}
+		else
+		{
+			std::string ex_message = "Variable '" + node->d_variable_name + "' already exists";
+			auto exception = TrentException("RuntimeException", ex_message, "RegisterVariable");
+			exception.Raise();
+		}
 		
-		RegisterVariable(node->d_variable_name, value);
-		return value;
+		return nullptr;
 	}
 
 	TrentObject* TrentInterpreter::EvaluateVariableNode(NodeRef<ASTVariableNode> node)
@@ -350,9 +388,8 @@ namespace trent
 
 			// Register arguments as new variables on the newly created stack
 			PushFunctionFrame(node->d_function_name);
-			PushVariableStack();
 
-			for (size_t i = 0; i < args.size(); i++)
+			for (size_t i = 0; i < std::min(args.size(), FunctionDeclarationNode->d_parameters.size()); i++)
 			{
 				// Add variables to the stack
 				std::string variable_name = FunctionDeclarationNode->d_parameters[i]->d_variable_name;
@@ -362,8 +399,8 @@ namespace trent
 			}
 
 			TrentObject* result = EvaluateUserDefinedFunctionCallNode(node->d_function_name);
+			TrentRuntime::ElevateObjectToPreviousStack(result);
 
-			PopVariableStack();
 			PopFunctionFrame();
 
 			return result;
@@ -578,7 +615,19 @@ namespace trent
 
 				// Check if current function needs returning
 				if (DoesFunctionNeedReturning())
+				{
+					// Free up the memory from the previous condition state object
+					TrentRuntime::FreeObject(condition_object);
+
+					// Elevate the returning result to the
+					// previous stack frame to preserve its lifetime.
+					TrentRuntime::ElevateObjectToPreviousStack(interpreted_result);
+
+					// Pop the variable stack
+					PopVariableStack();
+
 					return interpreted_result;
+				}
 
 				// Check if loop needs to be broken out of
 				if (DoesLoopNeedBreaking())
@@ -594,6 +643,10 @@ namespace trent
 			if (DoesLoopNeedBreaking())
 				break;
 
+			// Free up the memory from the previous condition state object
+			TrentRuntime::FreeObject(condition_object);
+
+			// Re-evaluate the condition object
 			condition_object = EvaluateExpressionNode(node->d_condition);
 		}
 
@@ -637,7 +690,19 @@ namespace trent
 
 				// Check if current function needs returning
 				if (DoesFunctionNeedReturning())
+				{
+					// Free up the memory from the previous condition state object
+					TrentRuntime::FreeObject(condition_object);
+
+					// Elevate the returning result to the
+					// previous stack frame to preserve its lifetime.
+					TrentRuntime::ElevateObjectToPreviousStack(interpreted_result);
+
+					// Pop the variable stack
+					PopVariableStack();
+
 					return interpreted_result;
+				}
 
 				// Check if loop needs to be broken out of
 				if (DoesLoopNeedBreaking())
@@ -656,7 +721,10 @@ namespace trent
 			// Run the increment
 			InterpretNode(node->d_increment);
 
-			// Re-evaluate the condition
+			// Free up the memory from the previous condition state object
+			TrentRuntime::FreeObject(condition_object);
+
+			// Re-evaluate the condition object
 			condition_object = EvaluateExpressionNode(node->d_condition);
 		}
 
@@ -706,12 +774,27 @@ namespace trent
 
 				// Check if current function needs returning
 				if (DoesFunctionNeedReturning())
+				{
+					// Free up the memory from the previous condition state object
+					TrentRuntime::FreeObject(condition_object);
+
+					// Elevate the returning result to the
+					// previous stack frame to preserve its lifetime.
+					TrentRuntime::ElevateObjectToPreviousStack(interpreted_result);
+
+					// Pop the variable stack
+					PopVariableStack();
+
 					return interpreted_result;
+				}
 
 				// Check if loop needs to be broken out of
 				if (DoesLoopNeedBreaking())
 					break;
 			}
+			
+			// Free up the memory from the previous condition state object
+			TrentRuntime::FreeObject(condition_object);
 
 			// Pop the variable stack
 			PopVariableStack();
@@ -746,7 +829,19 @@ namespace trent
 
 							// Check if current function needs returning
 							if (DoesFunctionNeedReturning())
+							{
+								// Free up the memory from the previous condition state object
+								TrentRuntime::FreeObject(condition_object);
+
+								// Elevate the returning result to the
+								// previous stack frame to preserve its lifetime.
+								TrentRuntime::ElevateObjectToPreviousStack(interpreted_result);
+
+								// Pop the variable stack
+								PopVariableStack();
+
 								return interpreted_result;
+							}
 
 							// Check if loop needs to be broken out of
 							if (DoesLoopNeedBreaking())
@@ -774,7 +869,19 @@ namespace trent
 
 					// Check if current function needs returning
 					if (DoesFunctionNeedReturning())
+					{
+						// Free up the memory from the previous condition state object
+						TrentRuntime::FreeObject(condition_object);
+
+						// Elevate the returning result to the
+						// previous stack frame to preserve its lifetime.
+						TrentRuntime::ElevateObjectToPreviousStack(interpreted_result);
+
+						// Pop the variable stack
+						PopVariableStack();
+
 						return interpreted_result;
+					}
 
 					// Check if loop needs to be broken out of
 					if (DoesLoopNeedBreaking())

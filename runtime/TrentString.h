@@ -10,6 +10,8 @@ namespace trent
 		TRAPI const char* ToString() override;
 		TRAPI const char* GetRuntimeName() override;
 
+		TRAPI virtual void CopyFrom(TrentObject* other) override;
+
 		TRAPI inline std::string& GetBuffer() { return d_buffer; }
 
 		// Addition binary operator

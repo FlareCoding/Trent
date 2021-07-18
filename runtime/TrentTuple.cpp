@@ -35,6 +35,18 @@ namespace trent
 		return "Tuple";
 	}
 
+	void TrentTuple::CopyFrom(TrentObject* other)
+	{
+		if (strcmp(other->GetRuntimeName(), "Tuple") != 0)
+		{
+			auto exception = TrentException("TrentTuple", "Cannot copy object buffer", "CopyObject::Error");
+			exception.Raise();
+			return;
+		}
+
+		this->d_contents = reinterpret_cast<TrentTuple*>(other)->d_contents;
+	}
+
 	TrentObject* TrentTuple::__GetItem(TrentObject* args)
 	{
 		int idx;
