@@ -913,6 +913,9 @@ namespace trent
 			bool val = (node->d_value == "true");
 			return MAKE_TRENT_BOOLEAN(val);
 		}
+		case LiteralType::Float: {
+			return MAKE_TRENT_FLOAT(std::stof(node->d_value));
+		}
 		default: {
 			break;
 		}

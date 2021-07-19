@@ -86,6 +86,14 @@ namespace trent::parser::lexer
 		return std::all_of(str.begin(), str.end(), ::isdigit);
 	}
 
+	bool IsFloat(const std::string& str)
+	{
+		std::istringstream iss(str);
+		float f;
+		iss >> std::noskipws >> f;
+		return iss.eof() && !iss.fail();
+	}
+
 	bool IsBoolean(const std::string& str)
 	{
 		return (str == "true") || (str == "false");
@@ -164,7 +172,7 @@ namespace trent::parser::lexer
 
 	void TrentLexer::ParseWord(const std::string& line, size_t lineno)
 	{
-		std::regex rx(R"(>=|<=|/=|\*=|\-=|\-\-|\+=|\+\+|!=|==|&&|\|\||[!();:=.,{}\[\]+*/\-])");
+		std::regex rx(R"(>=|<=|/=|\*=|\-=|\-\-|\+=|\+\+|!=|==|&&|\|\||[!();:=,{}\[\]+*/\-])");
 		std::sregex_token_iterator srti(line.begin(), line.end(), rx, { -1, 0 });
 		std::vector<std::string> tokens;
 		std::remove_copy_if(srti, std::sregex_token_iterator(),
@@ -173,10 +181,28 @@ namespace trent::parser::lexer
 
 		for (auto& token_str : tokens)
 		{
+			// Checking if value is null
+			if (token_str == "null")
+			{
+				auto token = MakeToken<LiteralValueToken>(LiteralType::Null, token_str);
+				token->d_lineno = lineno;
+				d_token_pool->Add(token);
+				continue;
+			}
+
 			// Checking if token is an integer
 			if (IsInteger(token_str))
 			{
 				auto token = MakeToken<LiteralValueToken>(LiteralType::Integer, token_str);
+				token->d_lineno = lineno;
+				d_token_pool->Add(token);
+				continue;
+			}
+
+			// Checking if token is a float
+			if (IsFloat(token_str))
+			{
+				auto token = MakeToken<LiteralValueToken>(LiteralType::Float, token_str);
 				token->d_lineno = lineno;
 				d_token_pool->Add(token);
 				continue;

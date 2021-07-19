@@ -8,7 +8,8 @@ namespace trent
 		Null,
 		Integer,
 		String,
-		Boolean
+		Boolean,
+		Float
 	};
 
 	class ASTLiteralValueNode : public ASTNode

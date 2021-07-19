@@ -1,5 +1,6 @@
 #include "TrentString.h"
 #include "TrentInteger.h"
+#include "TrentFloat.h"
 #include "TrentBoolean.h"
 #include "TrentRuntime.h"
 #include <algorithm>
@@ -50,6 +51,14 @@ namespace trent
 		if (strcmp(obj->GetRuntimeName(), "Int") == 0)
 		{
 			auto other = reinterpret_cast<TrentInteger*>(obj);
+			std::string new_string = this->d_buffer + std::to_string(other->GetValue());
+
+			return MAKE_TRENT_STRING(new_string.c_str());
+		}
+
+		if (strcmp(obj->GetRuntimeName(), "Float") == 0)
+		{
+			auto other = reinterpret_cast<TrentFloat*>(obj);
 			std::string new_string = this->d_buffer + std::to_string(other->GetValue());
 
 			return MAKE_TRENT_STRING(new_string.c_str());

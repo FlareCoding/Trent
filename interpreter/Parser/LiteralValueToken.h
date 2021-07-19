@@ -17,7 +17,8 @@ namespace trent::parser
 		std::unordered_map<LiteralType, std::string> d_value_string_map = {
 			{ LiteralType::Null,	"Null" },
 			{ LiteralType::Integer, "Integer" },
-			{ LiteralType::String,	"String" }
+			{ LiteralType::String,	"String" },
+			{ LiteralType::Float,	"Float" },
 		};
 	};
 }

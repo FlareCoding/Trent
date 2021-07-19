@@ -95,6 +95,7 @@ namespace trent
 #define MAKE_TRENT_INT(val)			TrentRuntime::AllocateObject<TrentInteger>(val)
 #define MAKE_TRENT_STRING(val)		TrentRuntime::AllocateObject<TrentString>(val)
 #define MAKE_TRENT_BOOLEAN(val)		TrentRuntime::AllocateObject<TrentBoolean>(val)
+#define MAKE_TRENT_FLOAT(val)		TrentRuntime::AllocateObject<TrentFloat>(val)
 #define MAKE_TRENT_TUPLE_IL(...)	TrentRuntime::AllocateObject<TrentTuple>(PARAM_LIST_IL(__VA_ARGS__))
 #define MAKE_TRENT_TUPLE_VEC(...)	TrentRuntime::AllocateObject<TrentTuple>(PARAM_LIST_VEC(__VA_ARGS__))
 #define MAKE_TRENT_TUPLE(val)		TrentRuntime::AllocateObject<TrentTuple>(val)
