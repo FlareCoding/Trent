@@ -61,6 +61,7 @@ namespace trent::parser
 		NodeRef<ASTNode>			ParseFunctionCall();
 
 		NodeRef<ASTNode>			ParseVariableDeclaration();
+		NodeRef<ASTNode>			ParseArrayDeclaration();
 		NodeRef<ASTNode>			ParseVariableAssignment();
 		NodeRef<ASTNode>			ParseVariableIncrement();
 		NodeRef<ASTNode>			ParseVariableDecrement();

@@ -12,6 +12,7 @@ namespace trent
 		Empty,
 		Program,
 		LiteralValue,
+		ArrayValue,
 		Expression,
 		FunctionCall,
 		FunctionDeclaration,
@@ -33,6 +34,10 @@ namespace trent
 	public:
 		ASTNodeType d_type		= ASTNodeType::Empty;
 		size_t		d_lineno	= 0;
+
+		// Used only when calling member functions
+		// or accessing class member.
+		std::string d_parent_object = "";
 	};
 
 	template <typename T>

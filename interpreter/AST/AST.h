@@ -3,6 +3,7 @@
 #include "ASTFunctionCallNode.h"
 #include "ASTExpressionNode.h"
 #include "ASTLiteralValueNode.h"
+#include "ASTArrayValueNode.h"
 #include "ASTVariableNode.h"
 #include "ASTVariableDeclarationNode.h"
 #include "ASTBinaryOperatorNode.h"

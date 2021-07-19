@@ -12,6 +12,7 @@ namespace trent
 
 		TRAPI inline bool GetValue() const { return d_value; }
 
+		TRAPI virtual TrentObject* Copy(bool delegate_ownership_to_runtime = true) override;
 		TRAPI virtual void CopyFrom(TrentObject* other) override;
 
 		// Equal to boolean operator

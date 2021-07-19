@@ -21,6 +21,11 @@ namespace trent
         return "Float";
     }
     
+    TrentObject* TrentFloat::Copy(bool delegate_ownership_to_runtime)
+    {
+        return MAKE_TRENT_FLOAT_SPEC_OWNERSHIP(delegate_ownership_to_runtime, d_value);
+    }
+
     void TrentFloat::CopyFrom(TrentObject* other)
     {
         if (strcmp(other->GetRuntimeName(), "Float") != 0)

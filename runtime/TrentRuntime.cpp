@@ -41,7 +41,7 @@ namespace trent
 	{
 		PushStackFrame();
 
-		TrentObject_Null = AllocateObject<TrentObject>();
+		TrentObject_Null = AllocateObject<TrentObject>(true);
 		TrentObject_Null->d_description = "null";
 	}
 

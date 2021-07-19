@@ -42,4 +42,6 @@ add_custom_target(Tests
         tests/loops.trent
         tests/mem_test.trent
         tests/fibb.trent
+        tests/arrays.trent
+        tests/classes.trent
 )

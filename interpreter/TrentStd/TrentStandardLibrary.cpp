@@ -91,7 +91,6 @@ namespace trent
 		if (obj)
 		{
 			char* out = (char*)obj->ToString();
-			__strremove(out, "'");
 			printf("%s\n", out);
 		}
 		else

@@ -10,6 +10,7 @@ namespace trent
 		TRAPI const char* ToString() override;
 		TRAPI const char* GetRuntimeName() override;
 
+		TRAPI virtual TrentObject* Copy(bool delegate_ownership_to_runtime = true) override;
 		TRAPI virtual void CopyFrom(TrentObject* other) override;
 
 		TRAPI inline std::string& GetBuffer() { return d_buffer; }

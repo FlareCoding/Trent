@@ -19,7 +19,7 @@
 		"keywords": {
 			"patterns": [{
 				"name": "keyword.control.trentlang",
-				"match": "\\b(if|elseif|else|while|for|return|break|var|func)\\b"
+				"match": "\\b(if|elseif|else|while|for|return|break|var|func|class|public|private|protected|this|constructor|destructor)\\b"
 			}]
 		},
 		"strings": {

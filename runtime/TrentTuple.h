@@ -1,6 +1,5 @@
 #pragma once
 #include "TrentObject.h"
-#include <vector>
 #include <initializer_list>
 
 namespace trent
@@ -13,6 +12,7 @@ namespace trent
 		TRAPI const char* ToString() override;
 		TRAPI const char* GetRuntimeName() override;
 
+		TRAPI virtual TrentObject* Copy(bool delegate_ownership_to_runtime = true) override;
 		TRAPI virtual void CopyFrom(TrentObject* other) override;
 
 		TRAPI TrentObject* __NativeGetItem(size_t idx) const { return d_contents[idx]; }

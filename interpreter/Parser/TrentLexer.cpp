@@ -163,17 +163,17 @@ namespace trent::parser::lexer
 					{
 						// Removing the leading and trailing whitespace
 						Trim(segment);
-						ParseWord(segment, lineno);
+						ParseSegment(segment, lineno);
 					}
 				}
 			}
 		}
 	}
 
-	void TrentLexer::ParseWord(const std::string& line, size_t lineno)
+	void TrentLexer::ParseSegment(const std::string& segment, size_t lineno)
 	{
 		std::regex rx(R"(>=|<=|/=|\*=|\-=|\-\-|\+=|\+\+|!=|==|&&|\|\||[!();:=,{}\[\]+*/\-])");
-		std::sregex_token_iterator srti(line.begin(), line.end(), rx, { -1, 0 });
+		std::sregex_token_iterator srti(segment.begin(), segment.end(), rx, { -1, 0 });
 		std::vector<std::string> tokens;
 		std::remove_copy_if(srti, std::sregex_token_iterator(),
 			std::back_inserter(tokens),
@@ -255,9 +255,27 @@ namespace trent::parser::lexer
 
 			// If no above condition is met, then
 			// the token will be considered an identifier.
-			auto token = MakeToken<IdentifierToken>(token_str);
-			token->d_lineno = lineno;
-			d_token_pool->Add(token);
+			// We also need to split the segment by period (to separate member functions).
+			std::string tmp;
+			std::stringstream stream(token_str);
+			std::vector<std::string> segment_tokens;
+			while (std::getline(stream, tmp, '.')) {
+				segment_tokens.push_back(tmp);
+			}
+
+			for (size_t i = 0; i < segment_tokens.size(); i++)
+			{
+				auto id_token = MakeToken<IdentifierToken>(segment_tokens[i]);
+				id_token->d_lineno = lineno;
+				d_token_pool->Add(id_token);
+
+				if (i < segment_tokens.size() - 1)
+				{
+					auto token = MakeToken<SymbolToken>(Symbol::Period, ".");
+					token->d_lineno = lineno;
+					d_token_pool->Add(token);
+				}
+			}
 		}
 	}
 }

@@ -1,0 +1,28 @@
+
+func main()
+{
+	println("Hello Arrays!\n");
+	
+	var arr = ["Hello", "goodbye", "megabyte", false, 45.3, 0.04];
+	println(arr);
+
+	arr.remove(2);
+	arr.remove(4);
+	arr.append(null);
+	arr.append("appended string");
+
+	var str1 = "this";
+	var arr2 = [null, "test", 42];
+	var secondArray = [str1, "is", arr2];
+
+	arr.insert(1, secondArray);
+	
+	println(arr);
+	println();
+
+	for (var i = 0; i < arr.length(); i++) {
+		println(arr.get(i));
+	}
+}
+
+main();

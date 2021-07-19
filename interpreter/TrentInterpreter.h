@@ -60,6 +60,7 @@ namespace trent
 
 	private:
 		TrentObject* EvaluateLiteralValueNode(NodeRef<ASTLiteralValueNode> node);
+		TrentObject* EvaluateArrayValueNode(NodeRef<ASTArrayValueNode> node);
 		TrentObject* EvaluateExpressionNode(NodeRef<ASTExpressionNode> node);
 		TrentObject* EvaluateBinaryOperatorNode(NodeRef<ASTBinaryOperatorNode> node);
 		TrentObject* EvaluateBooleanOperatorNode(NodeRef<ASTBooleanOperatorNode> node);

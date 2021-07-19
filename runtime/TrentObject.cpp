@@ -3,6 +3,7 @@
 #include "TrentInteger.h"
 #include "TrentString.h"
 #include "TrentBoolean.h"
+#include "TrentRuntime.h"
 #include <sstream> 
 #include <string>
 
@@ -40,6 +41,15 @@ namespace trent
 		return this->d_instance_description.c_str();
 	}
 
+	TrentObject* TrentObject::Copy(bool delegate_ownership_to_runtime)
+	{
+		auto obj = TrentRuntime::AllocateObject<TrentObject>(delegate_ownership_to_runtime);
+		if (d_description == "null")
+			obj->d_description = "null";
+
+		return obj;
+	}
+
 	void TrentObject::CopyFrom(TrentObject* other) {}
 
 	void TrentObject::AddSetter(const char* property, setter_fn_t fn)
@@ -68,6 +78,30 @@ namespace trent
 	void TrentObject::AddMemberFunction(const char* fn_name, member_fn_t fn)
 	{
 		d_member_functions[fn_name] = fn;
+	}
+
+	TrentObject::getter_fn_t TrentObject::GetPropertyGetter(const char* fn_name)
+	{
+		if (d_property_getters.find(fn_name) != d_property_getters.end())
+			return d_property_getters[fn_name];
+		else
+			return nullptr;
+	}
+
+	TrentObject::setter_fn_t TrentObject::GetPropertySetter(const char* fn_name)
+	{
+		if (d_property_setters.find(fn_name) != d_property_setters.end())
+			return d_property_setters[fn_name];
+		else
+			return nullptr;
+	}
+
+	TrentObject::member_fn_t TrentObject::GetMemberFunction(const char* fn_name)
+	{
+		if (d_member_functions.find(fn_name) != d_member_functions.end())
+			return d_member_functions[fn_name];
+		else
+			return nullptr;
 	}
 
 	TrentObject* TrentObject::__operator_add(TrentObject* obj)

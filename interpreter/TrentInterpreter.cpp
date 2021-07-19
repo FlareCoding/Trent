@@ -355,15 +355,43 @@ namespace trent
 		// Tracking the current line of code.
 		d_current_lineno = node->d_lineno;
 
-		auto function = GetRegisteredFunction(node->d_function_name);
+		TrentObject::member_fn_t function = nullptr;
 
-		if (!function &&
-			d_ast->d_functions.find(node->d_function_name) == d_ast->d_functions.end())
+		// Check if function is a global static function or a class member function 
+		if (!node->d_parent_object.empty())
 		{
-			std::string ex_message = "No function '" + node->d_function_name + "' exists";
-			auto exception = TrentException("RuntimeException", ex_message, "FunctionCallError");
-			exception.Raise();
-			return TrentObject_Null;
+			TrentObject* parent_object = GetRegisteredVariable(node->d_parent_object);
+			if (!parent_object)
+			{
+				std::string ex_message = std::string("Variable '") + node->d_parent_object + "' does not exist";
+				auto exception = TrentException("RuntimeException", ex_message, "EvaluateVariable");
+				exception.Raise();
+				return TrentObject_Null;
+			}
+
+			function = parent_object->GetMemberFunction(node->d_function_name.c_str());
+
+			if (!function &&
+				d_ast->d_functions.find(node->d_function_name) == d_ast->d_functions.end())
+			{
+				std::string ex_message = std::string(parent_object->GetRuntimeName()) + " has no member function '" + node->d_function_name + "'";
+				auto exception = TrentException("RuntimeException", ex_message, "FunctionCallError");
+				exception.Raise();
+				return TrentObject_Null;
+			}
+		}
+		else
+		{
+			function = GetRegisteredFunction(node->d_function_name);
+
+			if (!function &&
+				d_ast->d_functions.find(node->d_function_name) == d_ast->d_functions.end())
+			{
+				std::string ex_message = "No function '" + node->d_function_name + "' exists";
+				auto exception = TrentException("RuntimeException", ex_message, "FunctionCallError");
+				exception.Raise();
+				return TrentObject_Null;
+			}
 		}
 
 		// Getting function arguments
@@ -445,6 +473,11 @@ namespace trent
 		case ASTNodeType::LiteralValue: {
 			return EvaluateLiteralValueNode(
 				std::static_pointer_cast<ASTLiteralValueNode>(node->d_value)
+			);
+		}
+		case ASTNodeType::ArrayValue: {
+			return EvaluateArrayValueNode(
+				std::static_pointer_cast<ASTArrayValueNode>(node->d_value)
 			);
 		}
 		case ASTNodeType::Variable: {
@@ -922,5 +955,46 @@ namespace trent
 		}
 
 		return TrentObject_Null;
+	}
+
+	TrentObject* TrentInterpreter::EvaluateArrayValueNode(NodeRef<ASTArrayValueNode> node)
+	{
+		// Tracking the current line of code.
+		d_current_lineno = node->d_lineno;
+
+		std::vector<TrentObject*> array_items;
+
+		for (auto& item_node : node->d_values)
+		{
+			if (item_node->d_type == ASTNodeType::LiteralValue)
+			{
+				// parse literal value
+				auto item = EvaluateLiteralValueNode(
+					std::static_pointer_cast<ASTLiteralValueNode>(item_node)
+				);
+
+				array_items.push_back(item);
+			}
+			else if (item_node->d_type == ASTNodeType::ArrayValue)
+			{
+				// parse child array value
+				auto item = EvaluateArrayValueNode(
+					std::static_pointer_cast<ASTArrayValueNode>(item_node)
+				);
+
+				array_items.push_back(item);
+			}
+			else if (item_node->d_type == ASTNodeType::Variable)
+			{
+				// parse child array value
+				auto item = EvaluateVariableNode(
+					std::static_pointer_cast<ASTVariableNode>(item_node)
+				);
+
+				array_items.push_back(item);
+			}
+		}
+
+		return MAKE_TRENT_ARRAY(array_items);
 	}
 }

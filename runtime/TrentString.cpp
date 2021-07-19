@@ -17,13 +17,18 @@ namespace trent
 
 	const char* TrentString::ToString()
 	{
-		d_string_repr = std::string("'") + d_buffer + "'";
+		d_string_repr = d_buffer;
 		return d_string_repr.c_str();
 	}
 
 	const char* TrentString::GetRuntimeName()
 	{
 		return "String";
+	}
+
+	TrentObject* TrentString::Copy(bool delegate_ownership_to_runtime)
+	{
+		return MAKE_TRENT_STRING_SPEC_OWNERSHIP(delegate_ownership_to_runtime, d_buffer.c_str());
 	}
 
 	void TrentString::CopyFrom(TrentObject* other)

@@ -12,6 +12,7 @@ namespace trent
 
 		TRAPI inline float GetValue() const { return d_value; }
 
+		TRAPI virtual TrentObject* Copy(bool delegate_ownership_to_runtime = true) override;
 		TRAPI virtual void CopyFrom(TrentObject* other) override;
 
 		TRAPI virtual TrentObject* __operator_add(TrentObject* obj) override;

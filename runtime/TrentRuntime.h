@@ -19,7 +19,7 @@ namespace trent
 		TRAPI static void Shutdown();
 
 		template <class C, typename... Args>
-		static TrentObject* AllocateObject(Args&&... args);
+		static TrentObject* AllocateObject(bool should_add_to_stack, Args&&... args);
 
 		TRAPI static void FreeObject(TrentObject* obj);
 
@@ -45,7 +45,7 @@ namespace trent
 	};
 
 	template<class C, typename... Args>
-	inline TrentObject* TrentRuntime::AllocateObject(Args&&... args)
+	inline TrentObject* TrentRuntime::AllocateObject(bool should_add_to_stack, Args&&... args)
 	{
 		C* object = new C(std::forward<Args>(args)...);
 		object->d_type.name = typeid(*object).name();
@@ -54,7 +54,9 @@ namespace trent
 		object->d_type.size = sizeof(C);
 		object->__Init();
 
-		GetCurrentStackFrame().d_objects.push_back(object);
+		if (should_add_to_stack)
+			GetCurrentStackFrame().d_objects.push_back(object);
+
 		return object;
 	}
 }

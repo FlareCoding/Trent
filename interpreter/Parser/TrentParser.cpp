@@ -384,8 +384,14 @@ namespace trent::parser
 		Expect(TokenType::Identifier);
 		Expect(Operator::Assignment);
 
-		NodeRef<ASTExpressionNode> variable_value = ParseExpression();
+		NodeRef<ASTExpressionNode> variable_value = MakeNode<ASTExpressionNode>();
 		variable_value->d_lineno = d_current_token->d_lineno;
+
+		// Check if it's an expression or an explicit array declaration
+		if (IsSymbol(d_current_token, Symbol::BracketOpen))
+			variable_value->d_value = ParseArrayDeclaration();
+		else
+			variable_value->d_value = ParseExpression();
 
 		auto declaration_node = MakeNode<ASTVariableDeclarationNode>();
 		declaration_node->d_variable_name = variable_name;
@@ -395,6 +401,54 @@ namespace trent::parser
 		return declaration_node;
 	}
 
+	NodeRef<ASTNode> TrentParser::ParseArrayDeclaration()
+	{
+		Expect(Symbol::BracketOpen);
+
+		auto array_node = MakeNode<ASTArrayValueNode>();
+		array_node->d_lineno = d_current_token->d_lineno;
+
+		NodeRef<ASTNode> item = nullptr;
+
+		if (!IsSymbol(d_current_token, Symbol::BracketClose))
+		{
+			if (IsSymbol(d_current_token, Symbol::BracketOpen))
+				item = ParseArrayDeclaration();
+			else
+			{
+				if (d_current_token->d_type == TokenType::Identifier)
+					item = ParseIdentifier();
+				else
+					item = ParseLiteralValue();
+			}
+
+			item->d_lineno = d_current_token->d_lineno;
+			array_node->d_values.push_back(item);
+		}
+
+		while (IsSymbol(d_current_token, Symbol::Comma))
+		{
+			Expect(Symbol::Comma);
+
+			if (IsSymbol(d_current_token, Symbol::BracketOpen))
+				item = ParseArrayDeclaration();
+			else
+			{
+				if (d_current_token->d_type == TokenType::Identifier)
+					item = ParseIdentifier();
+				else
+					item = ParseLiteralValue();
+			}
+
+			item->d_lineno = d_current_token->d_lineno;
+			array_node->d_values.push_back(item);
+		}
+
+		Expect(Symbol::BracketClose);
+
+		return array_node;
+	}
+
 	NodeRef<ASTNode> TrentParser::ParseVariableAssignment()
 	{
 		auto variable_node = MakeNode<ASTVariableNode>(PreviousToken<IdentifierToken>()->d_value);
@@ -402,8 +456,14 @@ namespace trent::parser
 
 		Expect(Operator::Assignment);
 
-		NodeRef<ASTExpressionNode> variable_value = ParseExpression();
+		NodeRef<ASTExpressionNode> variable_value = MakeNode<ASTExpressionNode>();
 		variable_value->d_lineno = d_current_token->d_lineno;
+
+		// Check if it's an expression or an explicit array declaration
+		if (IsSymbol(d_current_token, Symbol::BracketOpen))
+			variable_value->d_value = ParseArrayDeclaration();
+		else
+			variable_value->d_value = ParseExpression();
 
 		auto assignment_node = MakeNode<ASTAssignmentNode>();
 		assignment_node->d_lineno = d_current_token->d_lineno;
@@ -619,6 +679,19 @@ namespace trent::parser
 	NodeRef<ASTNode> TrentParser::ParseIdentifier()
 	{
 		Expect(TokenType::Identifier);
+
+		// Parsing parent object
+		if (IsSymbol(d_current_token, Symbol::Period))
+		{
+			std::string current_id = PreviousToken<IdentifierToken>()->d_value;
+
+			Expect(Symbol::Period);
+
+			auto parsed_node = ParseIdentifier();
+			parsed_node->d_parent_object = current_id;
+
+			return parsed_node;
+		}
 
 		if (IsSymbol(d_current_token, Symbol::ParenthesisOpen))
 			return ParseFunctionCall();

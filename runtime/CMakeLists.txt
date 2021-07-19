@@ -15,6 +15,7 @@ set(
     runtime/TrentTuple.h
     runtime/TrentBoolean.h
     runtime/TrentFloat.h
+    runtime/TrentArray.h
 
     PARENT_SCOPE
 )
@@ -30,6 +31,7 @@ set(
     runtime/TrentTuple.cpp
     runtime/TrentBoolean.cpp
     runtime/TrentFloat.cpp
+    runtime/TrentArray.cpp
 
     PARENT_SCOPE
 )

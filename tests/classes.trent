@@ -1,0 +1,39 @@
+
+class Car
+{
+    this.public.var     yearMade = 0;
+    this.private.var    speed = 120;
+
+    this.constructor(year) {
+        this.yearMade = year;
+        println("Car constructor called");
+    }
+
+    this.destructor() {
+        println("Car destructor called");
+    }
+
+    this.public.func getSpeed() {
+        return this.speed;
+    }
+
+    this.public.func setSpeed(speed) {
+        this.speed = speed;
+    }
+}
+
+func main() {
+
+    Car ferrari = new Car(1982);
+    println("Ferrari was made in: " + ferrari.yearMade);
+
+    println("Old speed: " + ferrari.getSpeed());
+    
+    ferrari.setSpeed(260);
+
+    println("New speed: " + ferrari.getSpeed());
+}
+
+main();
+
+println("----End of Program----");

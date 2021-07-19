@@ -1,4 +1,5 @@
 #include "TrentTuple.h"
+#include "TrentRuntime.h"
 
 namespace trent
 {
@@ -33,6 +34,16 @@ namespace trent
 	const char* TrentTuple::GetRuntimeName()
 	{
 		return "Tuple";
+	}
+
+	TrentObject* TrentTuple::Copy(bool delegate_ownership_to_runtime)
+	{
+		std::vector<TrentObject*> contents;
+
+		for (auto& item : d_contents)
+			contents.push_back(item->Copy());
+
+		return MAKE_TRENT_TUPLE_VEC_SPEC_OWNERSHIP(delegate_ownership_to_runtime, contents);
 	}
 
 	void TrentTuple::CopyFrom(TrentObject* other)

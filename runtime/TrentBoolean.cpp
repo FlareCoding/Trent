@@ -19,6 +19,11 @@ namespace trent
 		return "Boolean";
 	}
 	
+	TrentObject* TrentBoolean::Copy(bool delegate_ownership_to_runtime)
+	{
+		return MAKE_TRENT_BOOLEAN_SPEC_OWNERSHIP(delegate_ownership_to_runtime, d_value);
+	}
+
 	void TrentBoolean::CopyFrom(TrentObject* other)
 	{
 		if (strcmp(other->GetRuntimeName(), "Boolean") != 0)

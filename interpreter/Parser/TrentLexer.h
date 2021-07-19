@@ -13,7 +13,7 @@ namespace trent::parser::lexer
 
 	private:
 		void ParseLine(const std::string& line, size_t lineno);
-		void ParseWord(const std::string& line, size_t lineno);
+		void ParseSegment(const std::string& segment, size_t lineno);
 
 	private:
 		std::shared_ptr<TokenPool> d_token_pool;
