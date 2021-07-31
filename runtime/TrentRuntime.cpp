@@ -58,6 +58,7 @@ namespace trent
 		if (it != current_frame.d_objects.end())
 		{
 			current_frame.d_objects.erase(it);
+			obj->__Deinit();
 			delete obj;
 		}
 	}
@@ -94,7 +95,7 @@ namespace trent
 		d_stack_frames.pop_back();
 		//printf("Popped stack frame...\n");
 	}
-	
+
 	void TrentRuntime::RaiseException(TrentException* e)
 	{
 		for (auto& observer : d_exception_observers)
@@ -102,7 +103,7 @@ namespace trent
 			observer(e);
 		}
 	}
-	
+
 	void TrentRuntime::SubscribeExceptionObserver(exception_observer_fn_t fn)
 	{
 		d_exception_observers.push_back(fn);

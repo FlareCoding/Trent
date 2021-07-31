@@ -24,7 +24,7 @@ namespace trent
 
 		AddMemberFunctions();
 	}
-	
+
 	TrentArray::~TrentArray()
 	{
 		for (auto& item : d_items)
@@ -40,7 +40,7 @@ namespace trent
 				d_string_repr += "'" + std::string(d_items[i]->ToString()) + "'";
 			else
 				d_string_repr += std::string(d_items[i]->ToString());
-			
+
 			if (i < d_items.size() - 1)
 				d_string_repr += ", ";
 		}
@@ -48,12 +48,12 @@ namespace trent
 
 		return d_string_repr.c_str();
 	}
-	
+
 	const char* TrentArray::GetRuntimeName()
 	{
 		return "Array";
 	}
-	
+
 	TrentObject* TrentArray::Copy(bool delegate_ownership_to_runtime)
 	{
 		return MAKE_TRENT_ARRAY_SPEC_OWNERSHIP(delegate_ownership_to_runtime, d_items);
@@ -163,12 +163,12 @@ namespace trent
 		d_items.erase(d_items.begin() + index);
 		return TrentObject_Null;
 	}
-	
+
 	TrentObject* TrentArray::__Length(TrentObject* args)
 	{
 		return MAKE_TRENT_INT((int)this->d_items.size());
 	}
-	
+
 	TrentObject* TrentArray::__GetItem(TrentObject* args)
 	{
 		int index = -1;

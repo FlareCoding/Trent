@@ -15,6 +15,8 @@
 #include "ASTReturnStatementNode.h"
 #include "ASTBreakStatementNode.h"
 #include "ASTIfElseStatementNode.h"
+#include "ASTClassNode.h"
+#include "ASTClassInstantiationNode.h"
 
 namespace trent
 {
@@ -27,5 +29,10 @@ namespace trent
 			std::string,
 			NodeRef<ASTFunctionDeclarationNode>
 		> d_functions;
+
+		std::unordered_map<
+			std::string,
+			NodeRef<ASTClassNode>
+		> d_classes;
 	};
 }

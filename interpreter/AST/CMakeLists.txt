@@ -23,6 +23,8 @@ set(
     interpreter/AST/ASTBreakStatementNode.h
     interpreter/AST/ASTIfElseStatementNode.h
     interpreter/AST/ASTArrayValueNode.h
+    interpreter/AST/ASTClassNode.h
+    interpreter/AST/ASTClassInstantiationNode.h
 
     PARENT_SCOPE
 )
@@ -47,6 +49,8 @@ set(
     interpreter/AST/ASTBreakStatementNode.cpp
     interpreter/AST/ASTIfElseStatementNode.cpp
     interpreter/AST/ASTArrayValueNode.cpp
+    interpreter/AST/ASTClassNode.cpp
+    interpreter/AST/ASTClassInstantiationNode.cpp
 
     PARENT_SCOPE
 )

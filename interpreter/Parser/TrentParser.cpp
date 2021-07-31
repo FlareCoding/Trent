@@ -169,7 +169,7 @@ namespace trent::parser
 		}
 	}
 
-	NodeRef<ASTExpressionNode> TrentParser::ParseExpression()
+	NodeRef<ASTExpressionNode> TrentParser::ParseExpression(bool this_membership_flag)
 	{
 		NodeRef<ASTExpressionNode> nested_expression_node = nullptr;
 
@@ -184,7 +184,7 @@ namespace trent::parser
 
 			nested_expression_node = ParseExpression();
 			nested_expression_node->d_lineno = d_current_token->d_lineno;
-			
+
 			Expect(Symbol::ParenthesisClose);
 
 			if (d_current_token->d_type != TokenType::Operator)
@@ -203,6 +203,9 @@ namespace trent::parser
 			{
 				auto lhs = MakeNode<ASTExpressionNode>();
 				lhs->d_value = ParseIdentifier();
+
+				if (this_membership_flag)
+					lhs->d_value->d_parent_object = "this";
 
 				expression_node->d_value = ParseOperator(lhs);
 				break;
@@ -230,6 +233,59 @@ namespace trent::parser
 			}
 
 			expression_node->d_value = ParseLiteralValue();
+			break;
+		}
+		case TokenType::Keyword: {
+			if (CurrentToken<KeywordToken>()->d_keyword == Keyword::New)
+			{
+				Expect(Keyword::New);
+
+				// Collect class name
+				auto class_name = CurrentToken<IdentifierToken>()->d_value;
+				Expect(TokenType::Identifier);
+
+				// Collect constructor arguments
+				Expect(Symbol::ParenthesisOpen);
+
+				auto class_instantiation_node = MakeNode<ASTClassInstantiationNode>();
+				class_instantiation_node->d_lineno = d_current_token->d_lineno;
+				class_instantiation_node->d_class_name = class_name;
+
+				NodeRef<ASTExpressionNode> argument = nullptr;
+
+				if (!IsSymbol(d_current_token, Symbol::ParenthesisClose))
+				{
+					argument = ParseExpression();
+					argument->d_lineno = d_current_token->d_lineno;
+
+					class_instantiation_node->d_arguments.push_back(argument);
+				}
+
+				while (IsSymbol(d_current_token, Symbol::Comma))
+				{
+					Expect(Symbol::Comma);
+
+					argument = ParseExpression();
+					argument->d_lineno = d_current_token->d_lineno;
+
+					class_instantiation_node->d_arguments.push_back(argument);
+				}
+
+				Expect(Symbol::ParenthesisClose);
+
+				// Set the value of the expression node
+				expression_node->d_value = class_instantiation_node;
+			}
+			else if (CurrentToken<KeywordToken>()->d_keyword == Keyword::This)
+			{
+				// Parse member property or function
+				Expect(Keyword::This);
+				Expect(Symbol::Period);
+
+				expression_node = ParseExpression(true);
+				expression_node->d_value->d_parent_object = "this";
+				return expression_node;
+			}
 			break;
 		}
 		default: {
@@ -260,7 +316,7 @@ namespace trent::parser
 		function_declaration_node->d_function_name = CurrentToken<IdentifierToken>()->d_value;
 		Expect(TokenType::Identifier);
 		Expect(Symbol::ParenthesisOpen);
-		
+
 		// Parsing function parameters
 		NodeRef<ASTNode> parameter = nullptr;
 
@@ -325,10 +381,10 @@ namespace trent::parser
 		auto return_statement_node = MakeNode<ASTReturnStatementNode>();
 		return_statement_node->d_lineno = d_current_token->d_lineno;
 
-		// Void return 
+		// Void return
 		if (IsSymbol(d_current_token, Symbol::Semicolon))
 			return return_statement_node;
-		
+
 		// Parse the return value expression
 		return_statement_node->d_return_value = ParseExpression();
 
@@ -354,7 +410,7 @@ namespace trent::parser
 		Expect(Symbol::ParenthesisOpen);
 
 		NodeRef<ASTExpressionNode> argument = nullptr;
-		
+
 		if (!IsSymbol(d_current_token, Symbol::ParenthesisClose))
 		{
 			argument = ParseExpression();
@@ -727,6 +783,17 @@ namespace trent::parser
 	{
 		switch (CurrentToken<KeywordToken>()->d_keyword)
 		{
+		case Keyword::Class: {
+			return ParseClassDeclaration();
+		}
+		case Keyword::This: {
+			Expect(Keyword::This);
+			Expect(Symbol::Period);
+
+			auto node = ParseStatement();
+			node->d_parent_object = "this";
+			return node;
+		}
 		case Keyword::Var: {
 			return ParseVariableDeclaration();
 		}
@@ -1027,6 +1094,92 @@ namespace trent::parser
 		return if_else_node;
 	}
 
+	NodeRef<ASTNode> TrentParser::ParseClassDeclaration()
+	{
+		auto class_node = MakeNode<ASTClassNode>();
+		class_node->d_lineno = d_current_token->d_lineno;
+
+		Expect(Keyword::Class);
+
+		std::string class_name = CurrentToken<IdentifierToken>()->d_value;
+		class_node->d_class_name = class_name;
+
+		Expect(TokenType::Identifier);
+		Expect(Symbol::BraceOpen);
+
+		// Check if class body is empty
+		if (IsSymbol(d_current_token, Symbol::BraceClose))
+			return class_node;
+
+		// If the class body is not empty,
+		// start parsing the statements.
+		NodeRef<ASTNode> body_node = nullptr;
+
+		// Checking for member functions or variables
+		if (IsKeyword(d_current_token, Keyword::This)) {
+			Expect(Keyword::This);
+			Expect(Symbol::Period);
+
+			body_node = ParseStatement();
+			if (body_node->d_type == ASTNodeType::FunctionDeclaration)
+			{
+				if (As<ASTFunctionDeclarationNode>(body_node)->d_function_name == "constructor")
+					class_node->d_constructor = As<ASTFunctionDeclarationNode>(body_node);
+				else
+					class_node->d_member_functions[As<ASTFunctionDeclarationNode>(body_node)->d_function_name] = As<ASTFunctionDeclarationNode>(body_node);
+			}
+			else if (body_node->d_type == ASTNodeType::VariableDeclaration)
+				class_node->d_member_vars[As<ASTVariableDeclarationNode>(body_node)->d_variable_name] = As<ASTVariableDeclarationNode>(body_node);
+		}
+		else
+		{
+			// Checking for static members
+			body_node = ParseStatement();
+			if (body_node->d_type == ASTNodeType::FunctionDeclaration)
+				class_node->d_static_functions[As<ASTFunctionDeclarationNode>(body_node)->d_function_name] = As<ASTFunctionDeclarationNode>(body_node);
+		}
+
+		while (IsSymbol(d_current_token, Symbol::Semicolon) || IsSymbol(d_current_token, Symbol::BraceClose))
+		{
+			if (IsSymbol(d_current_token, Symbol::Semicolon))
+				Expect(Symbol::Semicolon);
+			else
+				Expect(Symbol::BraceClose);
+
+			// EOF or end of class body reached.
+			if (d_current_token == nullptr || IsSymbol(d_current_token, Symbol::BraceClose))
+				return class_node;
+
+			// Checking for member functions or variables
+			if (IsKeyword(d_current_token, Keyword::This)) {
+				Expect(Keyword::This);
+				Expect(Symbol::Period);
+
+				body_node = ParseStatement();
+				if (body_node->d_type == ASTNodeType::FunctionDeclaration)
+				{
+					if (As<ASTFunctionDeclarationNode>(body_node)->d_function_name == "constructor")
+						class_node->d_constructor = As<ASTFunctionDeclarationNode>(body_node);
+					else
+						class_node->d_member_functions[As<ASTFunctionDeclarationNode>(body_node)->d_function_name] = As<ASTFunctionDeclarationNode>(body_node);
+				}
+				else if (body_node->d_type == ASTNodeType::VariableDeclaration)
+					class_node->d_member_vars[As<ASTVariableDeclarationNode>(body_node)->d_variable_name] = As<ASTVariableDeclarationNode>(body_node);
+			}
+			else
+			{
+				// Checking for static members
+				body_node = ParseStatement();
+				if (body_node->d_type == ASTNodeType::FunctionDeclaration)
+					class_node->d_static_functions[As<ASTFunctionDeclarationNode>(body_node)->d_function_name] = As<ASTFunctionDeclarationNode>(body_node);
+			}
+		}
+
+		Expect(Symbol::BraceClose);
+
+		return class_node;
+	}
+
 	std::shared_ptr<AST> TrentParser::ConstructAST()
 	{
 		auto ast = std::make_shared<AST>();
@@ -1041,6 +1194,8 @@ namespace trent::parser
 		auto node = ParseStatement();
 		if (node->d_type == ASTNodeType::FunctionDeclaration)
 			ast->d_functions[As<ASTFunctionDeclarationNode>(node)->d_function_name] = As<ASTFunctionDeclarationNode>(node);
+		else if (node->d_type == ASTNodeType::ClassDeclaration)
+			ast->d_classes[As<ASTClassNode>(node)->d_class_name] = As<ASTClassNode>(node);
 		else
 			program_root->d_children.push_back(node);
 
@@ -1070,6 +1225,8 @@ namespace trent::parser
 
 			if (node->d_type == ASTNodeType::FunctionDeclaration)
 				ast->d_functions[As<ASTFunctionDeclarationNode>(node)->d_function_name] = As<ASTFunctionDeclarationNode>(node);
+			else if (node->d_type == ASTNodeType::ClassDeclaration)
+				ast->d_classes[As<ASTClassNode>(node)->d_class_name] = As<ASTClassNode>(node);
 			else
 				program_root->d_children.push_back(node);
 		}

@@ -1,37 +1,51 @@
 
 class Car
 {
-    this.public.var     yearMade = 0;
-    this.private.var    speed = 120;
+    // Member variables
+    this.var yearMade  = 0;
+    this.var modelYear = 0;
 
-    this.constructor(year) {
-        this.yearMade = year;
-        println("Car constructor called");
+    // Constructor
+    this.func constructor(yearMade, modelYear) {
+        this.yearMade = yearMade;
+        this.modelYear = modelYear;
     }
 
-    this.destructor() {
-        println("Car destructor called");
+    // Static function
+    func makeDriveSound() {
+        println("Vroom");
     }
 
-    this.public.func getSpeed() {
-        return this.speed;
-    }
-
-    this.public.func setSpeed(speed) {
-        this.speed = speed;
+    // Member function
+    this.func getModelYear() {
+        return this.modelYear;
     }
 }
 
+func modifyCar(car) {
+    car.modelYear = 1820;
+    car.yearMade = 1876;
+    return car;
+}
+
 func main() {
+    println("Hello OOP World");
+    Car.makeDriveSound();
 
-    Car ferrari = new Car(1982);
-    println("Ferrari was made in: " + ferrari.yearMade);
+    var ferrari = new Car(2004, 2007);
 
-    println("Old speed: " + ferrari.getSpeed());
-    
-    ferrari.setSpeed(260);
+    println("Model Year : " + ferrari.getModelYear());
+    println("Year Made  : " + ferrari.yearMade);
 
-    println("New speed: " + ferrari.getSpeed());
+    ferrari.yearMade = 2008;
+    println("Year Made (New) : " + ferrari.yearMade);
+
+    println("----------------------");
+
+    ferrari = modifyCar(ferrari);
+
+    println("Model Year : " + ferrari.getModelYear());
+    println("Year Made  : " + ferrari.yearMade);
 }
 
 main();

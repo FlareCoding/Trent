@@ -15,6 +15,8 @@ namespace trent::parser::lexer
 		void ParseLine(const std::string& line, size_t lineno);
 		void ParseSegment(const std::string& segment, size_t lineno);
 
+		void __DebugPrintTokens();
+
 	private:
 		std::shared_ptr<TokenPool> d_token_pool;
 
@@ -28,6 +30,9 @@ namespace trent::parser::lexer
 			{ "if",			Keyword::If		},
 			{ "elseif",		Keyword::Elif	},
 			{ "else",		Keyword::Else	},
+			{ "class",		Keyword::Class	},
+			{ "this",		Keyword::This	},
+			{ "new",		Keyword::New	},
 		};
 
 		std::unordered_map<std::string, Operator> d_single_char_operators = {

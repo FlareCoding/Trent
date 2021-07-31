@@ -14,7 +14,10 @@ namespace trent::parser
 		Break,
 		If,
 		Elif,
-		Else
+		Else,
+		Class,
+		This,
+		New
 	};
 
 	class KeywordToken : public Token

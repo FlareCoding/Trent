@@ -24,7 +24,7 @@ namespace trent::parser::lexer
 	std::vector<std::string> RemoveNewLines(const std::string& str)
 	{
 		std::vector<std::string> strings;
-		
+
 		std::regex rgx("\n");
 		std::sregex_token_iterator iter(str.begin(), str.end(), rgx, -1);
 		std::sregex_token_iterator end;
@@ -108,7 +108,7 @@ namespace trent::parser::lexer
 	std::shared_ptr<TokenPool> TrentLexer::ConstructTokenPool(std::string& source)
 	{
 		d_token_pool = std::make_shared<TokenPool>();
-		
+
 		// Pre-filtering and removing multiline comments
 		RemoveMultilineComments(source);
 
@@ -216,7 +216,7 @@ namespace trent::parser::lexer
 				d_token_pool->Add(token);
 				continue;
 			}
-			
+
 			// Checking if token is a double character operator
 			if (IsInMap<Operator>(token_str, d_double_char_operators))
 			{
@@ -265,9 +265,18 @@ namespace trent::parser::lexer
 
 			for (size_t i = 0; i < segment_tokens.size(); i++)
 			{
-				auto id_token = MakeToken<IdentifierToken>(segment_tokens[i]);
-				id_token->d_lineno = lineno;
-				d_token_pool->Add(id_token);
+				if (IsInMap<Keyword>(segment_tokens[i], d_keywords))
+				{
+					auto kwd_token = MakeToken<KeywordToken>(d_keywords[segment_tokens[i]], segment_tokens[i]);
+					kwd_token->d_lineno = lineno;
+					d_token_pool->Add(kwd_token);
+				}
+				else
+				{
+					auto id_token = MakeToken<IdentifierToken>(segment_tokens[i]);
+					id_token->d_lineno = lineno;
+					d_token_pool->Add(id_token);
+				}
 
 				if (i < segment_tokens.size() - 1)
 				{
@@ -277,5 +286,11 @@ namespace trent::parser::lexer
 				}
 			}
 		}
+	}
+
+	void TrentLexer::__DebugPrintTokens()
+	{
+		for (auto& token : d_token_pool->__GetAllTokens())
+			printf("%s\n", token->ToString().c_str());
 	}
 }

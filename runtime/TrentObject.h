@@ -15,18 +15,28 @@ namespace trent
 		size_t		size;
 	};
 
+	class ASTFunctionDeclarationNode;
+	class ASTClassNode;
+
 	class TrentObject
 	{
 		friend class TrentRuntime;
 
 	public:
-		using getter_fn_t = std::function<TrentObject*()>;
-		using setter_fn_t = std::function<void(TrentObject* args)>;
-		using member_fn_t = std::function<TrentObject*(TrentObject* args)>;
+		using getter_fn_t = std::function<TrentObject* (const char* var_name)>;
+		using setter_fn_t = std::function<void(const char* var_name, TrentObject* args)>;
+		using member_fn_t = std::function<TrentObject* (TrentObject* args)>;
+
+		struct MemberFunctionData
+		{
+			member_fn_t d_compiled_fn;
+			std::shared_ptr<ASTFunctionDeclarationNode> d_func_decl;
+		};
 
 	public:
 		TRAPI virtual ~TrentObject() = default;
 		TRAPI virtual void __Init();
+		TRAPI void __Deinit();
 		TRAPI virtual const char* GetRuntimeName();
 		TRAPI virtual const char* ToString();
 		TRAPI const char* GetInstanceDescription();
@@ -52,7 +62,7 @@ namespace trent
 
 		// Less than or equal to boolean operator
 		TRAPI virtual TrentObject* __operator_gt(TrentObject* obj);
-		
+
 		// Greater than boolean operator
 		TRAPI virtual TrentObject* __operator_ltoe(TrentObject* obj);
 
@@ -65,15 +75,19 @@ namespace trent
 		// Not equal to boolean operator
 		TRAPI virtual TrentObject* __operator_notequ(TrentObject* obj);
 
-		ObjectType d_type;
+		ObjectType d_type = { 0 };
 
 		TRAPI void AddGetter(const char* property, getter_fn_t fn);
 		TRAPI void AddSetter(const char* property, setter_fn_t fn);
-		TRAPI void AddMemberFunction(const char* fn_name, member_fn_t fn);
+
+		TRAPI void AddMemberFunction(const char* fn_name, MemberFunctionData fn_data);
+		TRAPI void AddMemberVariable(const char* var_name, TrentObject* obj);
+		TRAPI TrentObject* GetMemberVariable(const char* var_name);
+		TRAPI void SetMemberVariable(const char* var_name, TrentObject* obj);
 
 		TRAPI getter_fn_t GetPropertyGetter(const char* fn_name);
 		TRAPI setter_fn_t GetPropertySetter(const char* fn_name);
-		TRAPI member_fn_t GetMemberFunction(const char* fn_name);
+		TRAPI MemberFunctionData GetMemberFunction(const char* fn_name);
 
 		TRAPI TrentObject* Call(const char* fn_name, TrentObject* args = nullptr);
 
@@ -83,9 +97,10 @@ namespace trent
 		std::string d_description;
 		std::string d_instance_description;
 
-		std::unordered_map<std::string, getter_fn_t> d_property_getters;
-		std::unordered_map<std::string, setter_fn_t> d_property_setters;
-		std::unordered_map<std::string, member_fn_t> d_member_functions;
+		std::unordered_map<std::string, getter_fn_t>		d_property_getters;
+		std::unordered_map<std::string, setter_fn_t>		d_property_setters;
+		std::unordered_map<std::string, MemberFunctionData> d_member_functions;
+		std::unordered_map<std::string, TrentObject*>		d_member_variables;
 	};
 
 	TRAPI extern TrentObject* TrentObject_Null;
@@ -93,7 +108,7 @@ namespace trent
 	TRAPI bool TrentArg_Parse(TrentObject* obj, const char* fmt, ...);
 
 #define TRENT_REGISTER_FUNCTION_LAMBDA(fn_name) \
-				[this](TrentObject* args) -> TrentObject* { return fn_name(args); }
+				{ [this](TrentObject* args) -> TrentObject* { return fn_name(args); }, nullptr }
 
 #define PARAM_LIST_IL(...)	std::initializer_list<TrentObject*>{__VA_ARGS__}
 #define PARAM_LIST_VEC(...) std::vector<TrentObject*>{__VA_ARGS__}

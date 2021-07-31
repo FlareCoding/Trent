@@ -4,7 +4,7 @@
 #include "TrentString.h"
 #include "TrentBoolean.h"
 #include "TrentRuntime.h"
-#include <sstream> 
+#include <sstream>
 #include <string>
 
 namespace trent
@@ -19,6 +19,12 @@ namespace trent
 
 		this->d_description = std::string("<") + this->d_type.name + std::string(" object at 0x") + ss.str() + ">";
 		this->d_instance_description = this->d_description;
+	}
+
+	void TrentObject::__Deinit()
+	{
+		for (auto& [name, obj] : d_member_variables)
+			TrentRuntime::FreeObject(obj);
 	}
 
 	const char* TrentObject::ToString()
@@ -50,7 +56,24 @@ namespace trent
 		return obj;
 	}
 
-	void TrentObject::CopyFrom(TrentObject* other) {}
+	void TrentObject::CopyFrom(TrentObject* other)
+	{
+		// Free existing member variables
+		for (auto& [name, obj] : d_member_variables)
+			TrentRuntime::FreeObject(obj);
+
+		// Clear existing member variables
+		d_member_variables.clear();
+
+		// Copy member functions
+		this->d_member_functions = other->d_member_functions;
+
+		// Copy member variables
+		for (auto& [name, var_obj] : other->d_member_variables)
+		{
+			d_member_variables[name] = var_obj->Copy(false);
+		}
+	}
 
 	void TrentObject::AddSetter(const char* property, setter_fn_t fn)
 	{
@@ -65,7 +88,7 @@ namespace trent
 			return TrentObject_Null;
 		}
 
-		member_fn_t func = d_member_functions[fn_name];
+		member_fn_t func = d_member_functions[fn_name].d_compiled_fn;
 		if (!func)
 		{
 			printf("TrentObject::Call::Error: Native function is nullptr\n");
@@ -75,9 +98,45 @@ namespace trent
 		return func(args);
 	}
 
-	void TrentObject::AddMemberFunction(const char* fn_name, member_fn_t fn)
+	void TrentObject::AddMemberFunction(const char* fn_name, MemberFunctionData fn_data)
 	{
-		d_member_functions[fn_name] = fn;
+		d_member_functions[fn_name] = fn_data;
+	}
+
+	void TrentObject::AddMemberVariable(const char* var_name, TrentObject* obj)
+	{
+		// Copy member object
+		d_member_variables[var_name] = obj->Copy(false);
+
+		// Add getter
+		AddGetter(var_name, [this](const char* name) {
+			return d_member_variables[name];
+		});
+
+		// Add setter
+		AddSetter(var_name, [this](const char* name, TrentObject* newObj) {
+			d_member_variables[name] = newObj;
+		});
+	}
+
+	TrentObject* TrentObject::GetMemberVariable(const char* var_name)
+	{
+		if (d_member_variables.find(var_name) != d_member_variables.end())
+			return d_member_variables[var_name];
+		else
+			return nullptr;
+	}
+
+	void TrentObject::SetMemberVariable(const char* var_name, TrentObject* obj)
+	{
+		if (d_member_variables.find(var_name) != d_member_variables.end())
+		{
+			// Free current object
+			TrentRuntime::FreeObject(d_member_variables[var_name]);
+
+			// Set new object
+			d_member_variables[var_name] = obj->Copy(false);
+		}
 	}
 
 	TrentObject::getter_fn_t TrentObject::GetPropertyGetter(const char* fn_name)
@@ -96,18 +155,18 @@ namespace trent
 			return nullptr;
 	}
 
-	TrentObject::member_fn_t TrentObject::GetMemberFunction(const char* fn_name)
+	TrentObject::MemberFunctionData TrentObject::GetMemberFunction(const char* fn_name)
 	{
 		if (d_member_functions.find(fn_name) != d_member_functions.end())
 			return d_member_functions[fn_name];
 		else
-			return nullptr;
+			return {};
 	}
 
 	TrentObject* TrentObject::__operator_add(TrentObject* obj)
 	{
 		std::string ex_message = std::string("Cannot use + operator on types ") + GetRuntimeName() + std::string(" and ") + obj->GetRuntimeName();
-		
+
 		auto exception = TrentException("TrentObject", ex_message, "__operator_add::Error");
 		exception.Raise();
 
@@ -255,7 +314,7 @@ namespace trent
 					exception.Raise();
 					return false;
 				}
-				
+
 				*p_arg = (char*)t_arg->GetBuffer().c_str();
 				break;
 			}

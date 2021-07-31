@@ -31,7 +31,7 @@ namespace trent
 	{
 		parser::TrentParser parser;
 		parser.Initialize(source);
-		
+
 		try {
 			d_ast = parser.ConstructAST();
 		}
@@ -118,7 +118,7 @@ namespace trent
 		TrentRuntime::Shutdown();
 		exit(1);
 	}
-	
+
 	TrentObject::member_fn_t TrentInterpreter::GetRegisteredFunction(const std::string& name)
 	{
 		if (d_registered_functions.find(name) != d_registered_functions.end())
@@ -223,8 +223,18 @@ namespace trent
 
 	TrentObject* TrentInterpreter::GetRegisteredVariable(const std::string& name)
 	{
+
 		auto& current_frame = GetCurrentFunctionFrame();
 		auto& global_frame = d_function_call_stack[0];
+
+		// Checking for instance membership
+		if (name == "this")
+		{
+			if (!current_frame.this_object)
+				return TrentObject_Null;
+
+			return current_frame.this_object;
+		}
 
 		// Iterating over variable stacks backwards in the current frame.
 		for (std::vector<VariableStack_t>::reverse_iterator var_stack_it = current_frame.d_variable_stacks.rbegin();
@@ -259,6 +269,10 @@ namespace trent
 			auto& stack = *var_stack_it;
 			if (stack.find(name) != stack.end())
 			{
+				// No need to do anything if it's a self assignment
+				if (stack[name] == obj)
+					return;
+
 				stack[name]->CopyFrom(obj);
 
 				if (obj) {
@@ -308,7 +322,7 @@ namespace trent
 			auto exception = TrentException("RuntimeException", ex_message, "RegisterVariable");
 			exception.Raise();
 		}
-		
+
 		return nullptr;
 	}
 
@@ -317,6 +331,32 @@ namespace trent
 		// Tracking the current line of code.
 		d_current_lineno = node->d_lineno;
 
+		// Checking for member variables
+		if (!node->d_parent_object.empty())
+		{
+			// Find variable object
+			TrentObject* parent_object = GetRegisteredVariable(node->d_parent_object);
+			if (!parent_object)
+			{
+				std::string ex_message = std::string("Variable '") + node->d_parent_object + "' does not exist";
+				auto exception = TrentException("RuntimeException", ex_message, "EvaluateVariable");
+				exception.Raise();
+				return TrentObject_Null;
+			}
+
+			TrentObject* variable = parent_object->GetMemberVariable(node->d_variable_name.c_str());
+			if (!variable)
+			{
+				std::string ex_message = std::string("Member variable '") + node->d_variable_name + "' does not exist";
+				auto exception = TrentException("RuntimeException", ex_message, "EvaluateVariable");
+				exception.Raise();
+				return TrentObject_Null;
+			}
+
+			return variable;
+		}
+
+		// Checking static variables
 		TrentObject* variable = GetRegisteredVariable(node->d_variable_name);
 		if (!variable)
 		{
@@ -334,18 +374,49 @@ namespace trent
 		// Tracking the current line of code.
 		d_current_lineno = node->d_lineno;
 
-		// See if the variable already exists or not, if not, throw an exception.
-		TrentObject* variable = GetRegisteredVariable(node->d_left->d_variable_name);
-		if (!variable)
+		TrentObject* variable = nullptr;
+		TrentObject* parent_object = nullptr;
+
+		if (!node->d_parent_object.empty())
 		{
-			std::string ex_message = std::string("Variable '") + node->d_left->d_variable_name + "' does not exist";
-			auto exception = TrentException("RuntimeException", ex_message, "EvaluateAssignmentNode");
-			exception.Raise();
-			return TrentObject_Null;
+			// Find parent object
+			parent_object = GetRegisteredVariable(node->d_parent_object);
+			if (!parent_object)
+			{
+				std::string ex_message = std::string("Variable '") + node->d_parent_object + "' does not exist";
+				auto exception = TrentException("RuntimeException", ex_message, "EvaluateVariable");
+				exception.Raise();
+				return TrentObject_Null;
+			}
+
+			TrentObject* variable = parent_object->GetMemberVariable(node->d_left->d_variable_name.c_str());
+			if (!variable)
+			{
+				std::string ex_message = std::string("Member variable '") + node->d_left->d_variable_name + "' does not exist";
+				auto exception = TrentException("RuntimeException", ex_message, "EvaluateVariable");
+				exception.Raise();
+				return TrentObject_Null;
+			}
+		}
+		else
+		{
+			// See if the variable already exists or not, if not, throw an exception.
+			TrentObject* variable = GetRegisteredVariable(node->d_left->d_variable_name);
+			if (!variable)
+			{
+				std::string ex_message = std::string("Variable '") + node->d_left->d_variable_name + "' does not exist";
+				auto exception = TrentException("RuntimeException", ex_message, "EvaluateAssignmentNode");
+				exception.Raise();
+				return TrentObject_Null;
+			}
 		}
 
 		TrentObject* value = EvaluateExpressionNode(node->d_right);
-		UpdateRegisteredVariable(node->d_left->d_variable_name, value);
+
+		if (!parent_object)
+			UpdateRegisteredVariable(node->d_left->d_variable_name, value);
+		else
+			parent_object->SetMemberVariable(node->d_left->d_variable_name.c_str(), value);
 
 		return value;
 	}
@@ -355,12 +426,25 @@ namespace trent
 		// Tracking the current line of code.
 		d_current_lineno = node->d_lineno;
 
-		TrentObject::member_fn_t function = nullptr;
+		TrentObject::MemberFunctionData function_data = { nullptr };
+		TrentObject* parent_object = nullptr;
 
-		// Check if function is a global static function or a class member function 
+		// Check if function is a global static function or a class member function
 		if (!node->d_parent_object.empty())
 		{
-			TrentObject* parent_object = GetRegisteredVariable(node->d_parent_object);
+			// Attempt to find static class function
+			if (d_ast->d_classes.find(node->d_parent_object) != d_ast->d_classes.end())
+			{
+				auto class_node = d_ast->d_classes[node->d_parent_object];
+
+				if (class_node->d_static_functions.find(node->d_function_name) != class_node->d_static_functions.end())
+				{
+					return EvaluateClassStaticFunctionCallNode(node, class_node);
+				}
+			}
+
+			// Find parent object
+			parent_object = GetRegisteredVariable(node->d_parent_object);
 			if (!parent_object)
 			{
 				std::string ex_message = std::string("Variable '") + node->d_parent_object + "' does not exist";
@@ -369,9 +453,9 @@ namespace trent
 				return TrentObject_Null;
 			}
 
-			function = parent_object->GetMemberFunction(node->d_function_name.c_str());
+			function_data = parent_object->GetMemberFunction(node->d_function_name.c_str());
 
-			if (!function &&
+			if (!(function_data.d_func_decl || function_data.d_compiled_fn) &&
 				d_ast->d_functions.find(node->d_function_name) == d_ast->d_functions.end())
 			{
 				std::string ex_message = std::string(parent_object->GetRuntimeName()) + " has no member function '" + node->d_function_name + "'";
@@ -382,9 +466,9 @@ namespace trent
 		}
 		else
 		{
-			function = GetRegisteredFunction(node->d_function_name);
+			function_data.d_compiled_fn = GetRegisteredFunction(node->d_function_name);
 
-			if (!function &&
+			if (!function_data.d_compiled_fn &&
 				d_ast->d_functions.find(node->d_function_name) == d_ast->d_functions.end())
 			{
 				std::string ex_message = "No function '" + node->d_function_name + "' exists";
@@ -426,7 +510,7 @@ namespace trent
 				RegisterVariable(variable_name, arg);
 			}
 
-			TrentObject* result = EvaluateUserDefinedFunctionCallNode(node->d_function_name);
+			TrentObject* result = EvaluateUserDefinedFunctionCallNode(FunctionDeclarationNode);
 			TrentRuntime::ElevateObjectToPreviousStack(result);
 
 			PopFunctionFrame();
@@ -434,14 +518,51 @@ namespace trent
 			return result;
 		}
 
-		return function(MAKE_TRENT_TUPLE(args));
+		if (function_data.d_compiled_fn)
+			return function_data.d_compiled_fn(MAKE_TRENT_TUPLE(args));
+
+		// If it's not a compiled function, then it must
+		// be a user-defined class member function.
+		if (!function_data.d_func_decl)
+		{
+			auto exception = TrentException("RuntimeException", "Member function is nullptr", "FunctionCallError");
+			exception.Raise();
+			return TrentObject_Null;
+		}
+
+		// Register arguments as new variables on the newly created stack
+		PushFunctionFrame(node->d_function_name);
+
+		if (parent_object)
+		{
+			// Set the stack's "this" object
+			auto& current_frame = GetCurrentFunctionFrame();
+			current_frame.this_object = parent_object;
+		}
+
+		for (size_t i = 0; i < std::min(args.size(), function_data.d_func_decl->d_parameters.size()); i++)
+		{
+			// Add variables to the stack
+			std::string variable_name = function_data.d_func_decl->d_parameters[i]->d_variable_name;
+			TrentObject* arg = args[i];
+
+			RegisterVariable(variable_name, arg);
+		}
+
+		TrentObject* result = EvaluateUserDefinedFunctionCallNode(function_data.d_func_decl);
+		TrentRuntime::ElevateObjectToPreviousStack(result);
+
+		PopFunctionFrame();
+
+		return result;
 	}
 
-	TrentObject* TrentInterpreter::EvaluateUserDefinedFunctionCallNode(const std::string& name)
+	TrentObject* TrentInterpreter::EvaluateUserDefinedFunctionCallNode(NodeRef<ASTFunctionDeclarationNode> node)
 	{
-		auto FunctionDeclarationNode = d_ast->d_functions[name];
+		// Tracking the current line of code.
+		d_current_lineno = node->d_lineno;
 
-		for (auto& node : FunctionDeclarationNode->d_body)
+		for (auto& node : node->d_body)
 		{
 			TrentObject* interpreted_result = InterpretNode(node);
 
@@ -451,6 +572,130 @@ namespace trent
 		}
 
 		return TrentObject_Null;
+	}
+
+	TrentObject* TrentInterpreter::EvaluateClassStaticFunctionCallNode(NodeRef<ASTFunctionCallNode> node, NodeRef<ASTClassNode> class_node)
+	{
+		// Tracking the current line of code.
+		d_current_lineno = node->d_lineno;
+
+		// Getting function arguments
+		std::vector<TrentObject*> args;
+		for (auto& arg_node : node->d_arguments)
+		{
+			TrentObject* t_arg = EvaluateExpressionNode(arg_node);
+			if (!t_arg)
+			{
+				auto exception = TrentException("RuntimeException", "Failed to evaluate argument expression", "FunctionCallError");
+				exception.Raise();
+				continue;
+			}
+
+			args.push_back(t_arg);
+		}
+
+		auto FunctionDeclarationNode = class_node->d_static_functions[node->d_function_name];
+
+		// Register arguments as new variables on the newly created stack
+		PushFunctionFrame(node->d_function_name);
+
+		for (size_t i = 0; i < std::min(args.size(), FunctionDeclarationNode->d_parameters.size()); i++)
+		{
+			// Add variables to the stack
+			std::string variable_name = FunctionDeclarationNode->d_parameters[i]->d_variable_name;
+			TrentObject* arg = args[i];
+
+			RegisterVariable(variable_name, arg);
+		}
+
+		TrentObject* result = EvaluateUserDefinedFunctionCallNode(FunctionDeclarationNode);
+		TrentRuntime::ElevateObjectToPreviousStack(result);
+
+		PopFunctionFrame();
+
+		return result;
+	}
+
+	TrentObject* TrentInterpreter::EvaluateClassInstantiationNode(NodeRef<ASTClassInstantiationNode> node)
+	{
+		// Tracking the current line of code.
+		d_current_lineno = node->d_lineno;
+
+		auto class_name = node->d_class_name;
+		if (d_ast->d_classes.find(class_name) == d_ast->d_classes.end())
+		{
+			auto exception = TrentException("RuntimeException", "Class definition for class '" + class_name + "' not found", "ClassInstantiationError");
+			exception.Raise();
+			return TrentObject_Null;
+		}
+
+		auto class_decl = d_ast->d_classes[class_name];
+
+		// Getting constructor arguments
+		std::vector<TrentObject*> constructor_arguments;
+		for (auto& arg_node : node->d_arguments)
+		{
+			TrentObject* t_arg = EvaluateExpressionNode(arg_node);
+			if (!t_arg)
+			{
+				auto exception = TrentException("RuntimeException", "Failed to evaluate argument expression", "EvaluateClassInstantiationNode");
+				exception.Raise();
+				continue;
+			}
+
+			constructor_arguments.push_back(t_arg);
+		}
+
+		auto instance = TrentRuntime::AllocateObject<TrentObject>(true);
+
+		// Registering member functions
+		for (auto& pair : class_decl->d_member_functions)
+		{
+			auto fn_name = pair.first;
+			auto func_decl_node = pair.second;
+
+			TrentObject::MemberFunctionData fn_data = { nullptr, nullptr };
+			fn_data.d_func_decl = func_decl_node;
+
+			instance->AddMemberFunction(fn_name.c_str(), fn_data);
+		}
+
+		// Registering member variables
+		for (auto& pair : class_decl->d_member_vars)
+		{
+			auto var_name = pair.first;
+			auto var_decl_node = pair.second;
+			TrentObject* var_value = EvaluateExpressionNode(var_decl_node->d_value);
+
+			instance->AddMemberVariable(var_name.c_str(), var_value);
+		}
+
+		// Finally, call the constructor if it exists
+		if (class_decl->d_constructor)
+		{
+			// Register arguments as new variables on the newly created stack
+			PushFunctionFrame(class_decl->d_class_name + ".constructor");
+
+			// Set the stack's "this" object
+			auto& current_frame = GetCurrentFunctionFrame();
+			current_frame.this_object = instance;
+
+			for (size_t i = 0; i < std::min(constructor_arguments.size(), class_decl->d_constructor->d_parameters.size()); i++)
+			{
+				// Add variables to the stack
+				std::string variable_name = class_decl->d_constructor->d_parameters[i]->d_variable_name;
+				TrentObject* arg = constructor_arguments[i];
+
+				RegisterVariable(variable_name, arg);
+			}
+
+			TrentObject* result = EvaluateUserDefinedFunctionCallNode(class_decl->d_constructor);
+			TrentRuntime::ElevateObjectToPreviousStack(result);
+
+			PopFunctionFrame();
+		}
+
+		return instance;
 	}
 
 	TrentObject* TrentInterpreter::EvaluateExpressionNode(NodeRef<ASTExpressionNode> node)
@@ -463,6 +708,11 @@ namespace trent
 		case ASTNodeType::Expression: {
 			return EvaluateExpressionNode(
 				std::static_pointer_cast<ASTExpressionNode>(node->d_value)
+			);
+		}
+		case ASTNodeType::ClassInstantiation: {
+			return EvaluateClassInstantiationNode(
+				std::static_pointer_cast<ASTClassInstantiationNode>(node->d_value)
 			);
 		}
 		case ASTNodeType::FunctionCall: {
@@ -591,14 +841,14 @@ namespace trent
 		}
 		case Operator::Not: {
 			ValueMustBeBoolean(right_val, "right");
-			
+
 			bool current_bool_value = reinterpret_cast<TrentBoolean*>(right_val)->GetValue();
 			return MAKE_TRENT_BOOLEAN(!current_bool_value);
 		}
 		case Operator::And: {
 			ValueMustBeBoolean(left_val, "left");
 			ValueMustBeBoolean(right_val, "right");
-			
+
 			bool current_left_bool_value = reinterpret_cast<TrentBoolean*>(left_val)->GetValue();
 			bool current_right_bool_value = reinterpret_cast<TrentBoolean*>(right_val)->GetValue();
 
@@ -607,7 +857,7 @@ namespace trent
 		case Operator::Or: {
 			ValueMustBeBoolean(left_val, "left");
 			ValueMustBeBoolean(right_val, "right");
-			
+
 			bool current_left_bool_value = reinterpret_cast<TrentBoolean*>(left_val)->GetValue();
 			bool current_right_bool_value = reinterpret_cast<TrentBoolean*>(right_val)->GetValue();
 
@@ -825,7 +1075,7 @@ namespace trent
 				if (DoesLoopNeedBreaking())
 					break;
 			}
-			
+
 			// Free up the memory from the previous condition state object
 			TrentRuntime::FreeObject(condition_object);
 

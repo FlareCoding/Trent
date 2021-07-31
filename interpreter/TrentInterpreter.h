@@ -10,6 +10,7 @@ namespace trent
 	{
 		std::string name = "Anonymous";
 		bool		return_state = false;
+		TrentObject* this_object = nullptr;
 
 		std::vector<VariableStack_t> d_variable_stacks;
 	};
@@ -77,7 +78,10 @@ namespace trent
 		TrentObject* EvaluateAssignmentNode(NodeRef<ASTAssignmentNode> node);
 
 		TrentObject* EvaluateFunctionCallNode(NodeRef<ASTFunctionCallNode> node);
-		TrentObject* EvaluateUserDefinedFunctionCallNode(const std::string& name);
+		TrentObject* EvaluateUserDefinedFunctionCallNode(NodeRef<ASTFunctionDeclarationNode> node);
+		TrentObject* EvaluateClassStaticFunctionCallNode(NodeRef<ASTFunctionCallNode> node, NodeRef<ASTClassNode> class_node);
+
+		TrentObject* EvaluateClassInstantiationNode(NodeRef<ASTClassInstantiationNode> node);
 
 
 	private:

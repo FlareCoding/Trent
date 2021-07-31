@@ -53,7 +53,7 @@ namespace trent::parser
 		bool IsOperator(TokenRef<Token> token, Operator op);
 
 		NodeRef<ASTNode>			ParseStatement();
-		NodeRef<ASTExpressionNode>	ParseExpression();
+		NodeRef<ASTExpressionNode>	ParseExpression(bool this_membership_flag = false);
 		NodeRef<ASTNode>			ParseReturnStatement();
 		NodeRef<ASTNode>			ParseBreakStatement();
 
@@ -78,6 +78,8 @@ namespace trent::parser
 		NodeRef<ASTNode>			ParseWhileLoop();
 		NodeRef<ASTNode>			ParseForLoop();
 		NodeRef<ASTNode>			ParseIfElseStatement();
+
+		NodeRef<ASTNode>			ParseClassDeclaration();
 
 	private:
 		// Contains all the tokens

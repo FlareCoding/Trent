@@ -26,7 +26,9 @@ namespace trent
 		ForLoop,
 		ReturnStatement,
 		BreakStatement,
-		IfElseStatement
+		IfElseStatement,
+		ClassDeclaration,
+		ClassInstantiation
 	};
 
 	class ASTNode
